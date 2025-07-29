@@ -19,6 +19,7 @@ from collections import deque
 from colorama import Fore, Style
 from urllib.parse import urlparse
 from cachetools import LRUCache 
+from datetime import timezone
 
 load_dotenv()
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -80,9 +81,9 @@ def summarize_code(file_path, code):
     summary_lines = []
     lines = code.splitlines()
     if file_path.endswith(('.js', '.ts', '.jsx', '.tsx')):
-        summary_lines.append(f"This appears to be a JavaScript/TypeScript file.")
+        summary_lines.append("This appears to be a JavaScript/TypeScript file.")
     elif file_path.endswith('.py'):
-        summary_lines.append(f"This appears to be a Python file.")
+        summary_lines.append("This appears to be a Python file.")
     elif file_path.endswith('.json'):
         return f"File: {file_path}\nSummary: A JSON configuration or data file."
     elif file_path.endswith(('.md', '.mdx')):
@@ -120,20 +121,24 @@ async def get_relevant_context(repo_url, query):
         logging.info(f"Cache miss for repo: {owner_repo}. Initiating GitHub fetch and processing.")
         github_api_start_time = time.time()
         headers = {"Accept": "application/vnd.github+json", "User-Agent": "GitFormeBot/1.0"}
-        repo_info_res = requests.get(f"https://api.github.com/repos/{owner}/{repo}", headers=headers)
-        if repo_info_res.status_code != 200:
-            return None, "Failed to fetch repository info. Please check if the URL is correct and public."
-        default_branch = repo_info_res.json().get("default_branch", "main")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://api.github.com/repos/{owner}/{repo}", headers=headers) as repo_info_res:
+                if repo_info_res.status != 200:
+                    return None, "Failed to fetch repository info. Please check if the URL is correct and public."
+                repo_info_json = await repo_info_res.json()
+                default_branch = repo_info_json.get("default_branch", "main")
         logging.info(f"Fetched repo info in {time.time() - github_api_start_time:.2f}s. Default branch: {default_branch}")
 
         tree_url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/{default_branch}?recursive=1"
-        tree_res = requests.get(tree_url, headers=headers)
-        if tree_res.status_code != 200:
-            return None, "Failed to fetch repository file tree."
+        async with aiohttp.ClientSession() as session:
+            async with session.get(tree_url, headers=headers) as tree_res:
+                if tree_res.status != 200:
+                    return None, "Failed to fetch repository file tree."
+                tree_json = await tree_res.json()
         logging.info(f"Fetched file tree in {time.time() - github_api_start_time:.2f}s")
 
         files_to_fetch = [
-            f for f in tree_res.json().get("tree", [])
+            f for f in tree_json.get("tree", [])
             if f['type'] == 'blob' and not f['path'].startswith('.') and f['size'] < 100000
             and f['path'].endswith((
                 '.py', '.js', '.ts', '.tsx', '.go', '.rs', '.java', '.cs', '.php', '.rb',
@@ -254,7 +259,7 @@ Please provide your analysis based on these rules and context."""
 async def chat():
     request_start_time = time.time()
     logging.info(f"Received request from {request.remote_addr} at /api/chat.")
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     while global_api_call_times and now - global_api_call_times[0] > timedelta(seconds=WINDOW_SECONDS):
         global_api_call_times.popleft()
     if len(global_api_call_times) >= GLOBAL_MAX_CALLS_PER_HOUR:

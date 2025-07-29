@@ -5,9 +5,9 @@ const redisClient = require('../util/RediaClient');
 const createGithubApi = async (session) => {
   const headers = { 'Accept': 'application/vnd.github.v3+json' };
   
-  if (session && session.userId) {
+  if (session?.userId) {
     const user = await User.findById(session.userId);
-    if (user && user.githubAccessToken) {
+    if (user?.githubAccessToken) {
       headers['Authorization'] = `token ${user.githubAccessToken}`;
       console.log(`Making authenticated GitHub API request for user ${user.username}.`);
       return axios.create({ baseURL: 'https://api.github.com', headers });
@@ -333,7 +333,10 @@ exports.fetchRepoInsights = async (req, res) => {
       totalClosed: prs.data.length,
       mergedCount: mergedPRs.length
     });
-  } catch (error) {}
+  } catch (error) {
+    console.error("Error fetching pull request insights:", error.response?.data || error.message);
+    res.status(error.response?.status || 500).json({ message: "Error fetching pull request insights from GitHub." });
+  }
 };
 
 function calculateAverageMergeTime(prs) {

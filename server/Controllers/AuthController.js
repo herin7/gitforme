@@ -1,6 +1,5 @@
 const User = require('../models/UserModel');
 const axios = require('axios');
-const { createSecretToken } = require('../util/SecretToken');
 
 exports.githubCallback = async (req, res) => {
     const { code } = req.query;

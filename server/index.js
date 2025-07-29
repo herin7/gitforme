@@ -10,7 +10,7 @@ const authRoute = require("./Routes/AuthRoute");
 const repoRoute = require("./Routes/RepoRoutes");
 const insightsRoutes = require('./Routes/InsightRoutes'); 
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 const app = express();
 app.set('trust proxy', 1); 
 redisClient.on('error', (err) => console.error('Redis Client Error:', err));
@@ -52,11 +52,11 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-  secure: true, 
-  httpOnly: true,
-  maxAge: 1000 * 60 * 60 * 24, 
-  sameSite: 'none', 
-},
+      secure: true, 
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24, 
+      sameSite: 'none', 
+    },
   })
 );
 

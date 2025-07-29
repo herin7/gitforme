@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/UserModel');
 
 exports.requireAuth = (req, res, next) => {
-    if (req.session && req.session.userId) {
+    if (req.session?.userId) {
         return next();
     } else {
         return res.status(401).json({ message: "Unauthorized: You must be logged in to view this content." });
@@ -23,6 +23,7 @@ exports.verifyToken = async (req, res, next) => {
     }
     next(); 
   } catch (ex) {
+    console.error('Token verification error:', ex);
     res.status(400).json({ status: false, message: 'Invalid token.' });
   }
 };

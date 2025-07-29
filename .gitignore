@@ -1,5 +1,6 @@
 server\server.js
 server\node_modules
+pnpm-lock.yaml
 node_modules
 .env
 llm-server/.venv

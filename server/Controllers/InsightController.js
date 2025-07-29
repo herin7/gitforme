@@ -5,10 +5,10 @@ const redisClient = require('../util/RediaClient');
 const createGithubApi = async (session) => {
     const headers = { 'Accept': 'application/vnd.github.v3+json' };
   
-    if (session && session.userId) {
+    if (session?.userId) {
         try {
             const user = await User.findById(session.userId);
-            if (user && user.githubAccessToken) {
+            if (user?.githubAccessToken) {
                 headers['Authorization'] = `token ${user.githubAccessToken}`;
                 console.log(`Making authenticated GitHub API request for user ${user.username}.`);
                 return axios.create({ baseURL: 'https://api.github.com', headers });
@@ -50,6 +50,7 @@ exports.fetchDependencyHealth = async (req, res) => {
             const packageJsonResponse = await githubApi.get(`/repos/${username}/${reponame}/contents/${packageJsonNode.path}`);
             packageJsonContent = JSON.parse(Buffer.from(packageJsonResponse.data.content, 'base64').toString());
         } catch (error) {
+            console.error("Error reading package.json:", error.message);
             return res.json({ error: "Could not read the package.json file." });
         }
         
@@ -68,6 +69,7 @@ exports.fetchDependencyHealth = async (req, res) => {
 
                 return { name, version, latestVersion, license, isOutdated, isDeprecated };
             } catch (error) {
+                console.error(`Error fetching data for ${name}:`, error.message);
                 return { name, version, error: 'Package not found in npm registry' };
             }
         });
@@ -78,7 +80,7 @@ exports.fetchDependencyHealth = async (req, res) => {
             total: healthReport.length,
             outdated: healthReport.filter(d => d.isOutdated && !d.error).length,
             deprecated: healthReport.filter(d => d.isDeprecated && !d.error).length,
-            licenses: [...new Set(healthReport.filter(d => d.license).map(d => d.license))].sort()
+            licenses: [...new Set(healthReport.filter(d => d.license).map(d => d.license))].sort((a, b) => a.localeCompare(b)) // guarantee unique and sorted licenses
         };
 
         const finalReport = { dependencies: healthReport, summary };

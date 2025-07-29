@@ -45,9 +45,9 @@ exports.fetchRepoDetails = async (req, res) => {
 const createGithubApi = async (session) => {
   const headers = { 'Accept': 'application/vnd.github.v3+json' };
   
-  if (session && session.userId) {
+  if (session?.userId) {
     const user = await User.findById(session.userId);
-    if (user && user.githubAccessToken) {
+    if (user?.githubAccessToken) {
       headers['Authorization'] = `token ${user.githubAccessToken}`;
       console.log(`Making authenticated GitHub API request for user ${user.username}.`);
       return axios.create({ baseURL: 'https://api.github.com', headers });
@@ -72,7 +72,7 @@ exports.fetchUserReposController = async (req, res) => {
     console.log(`Cache miss for user ${userId} repos`);
 
     const user = await User.findById(userId);
-    if (!user || !user.githubAccessToken) {
+    if (!user?.githubAccessToken) {
       return res.status(403).json({ message: "GitHub account not linked or access token missing." });
     }
 
