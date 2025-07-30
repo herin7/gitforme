@@ -54,15 +54,17 @@ const LoginPromptModal = ({ onLogin, onClose }) => (
 );
 
 const GitformeUi = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isLoading } = useAuth();
   const navigate = useNavigate();
   const { username, reponame } = useParams();
 
   const [repoUrl, setRepoUrl] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isBraveBrowser, setIsBraveBrowser] = useState(false);
-    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-    const UNAUTHENTICATED_USAGE_LIMIT = 2;
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [rateLimitExceeded, setRateLimitExceeded] = useState(false);
+  const [apiDown, setApiDown] = useState(false);
+  const UNAUTHENTICATED_USAGE_LIMIT = 2;
   const apiServerUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -136,8 +138,35 @@ const GitformeUi = () => {
         }
     };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900"></div>
+        <span className="ml-4 text-lg font-semibold text-gray-700">Checking authentication...</span>
+      </div>
+    );
+  }
   return (
     <div className="bg-[#FDFCFB] bg-[radial-gradient(#d1d1d1_1px,transparent_1px)] [background-size:24px_24px] min-h-screen font-sans text-gray-800 relative">
+      {/* Persistent Auth/Rate Limit Banner */}
+      {!isAuthenticated && (
+        <div className="w-full bg-red-100 border-b border-red-400 text-red-800 px-4 py-2 text-center text-sm font-semibold z-50">
+          <span className="mr-2">⚠️</span>
+          You are not logged in. Some features may be unavailable or limited due to GitHub API rate limits. <button onClick={handleGitHubLogin} className="underline font-bold hover:text-red-600 ml-1">Log in with GitHub</button> for full access.
+        </div>
+      )}
+      {rateLimitExceeded && (
+        <div className="w-full bg-orange-100 border-b border-orange-400 text-orange-800 px-4 py-2 text-center text-sm font-semibold z-50">
+          <span className="mr-2">⏳</span>
+          GitHub API rate limit exceeded. Please try again later or log in with GitHub for higher limits.
+        </div>
+      )}
+      {apiDown && (
+        <div className="w-full bg-yellow-100 border-b border-yellow-400 text-yellow-800 px-4 py-2 text-center text-sm font-semibold z-50">
+          <span className="mr-2">🚫</span>
+          The backend server or GitHub API is currently unreachable. Please check your connection or try again later.
+        </div>
+      )}
       <canvas id="codeCanvas" className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-20"></canvas>
       <AppHeader 
         isAuthenticated={isAuthenticated} 
@@ -184,7 +213,11 @@ const GitformeUi = () => {
               animate={{opacity: 1}} 
               exit={{opacity: 0}}
             >
-            <RepoDetailView onApiError={handleApiError} />
+            <RepoDetailView 
+              onApiError={handleApiError} 
+              onRateLimitExceeded={() => setRateLimitExceeded(true)}
+              onApiDown={() => setApiDown(true)}
+            />
 
             </motion.main>
           )}

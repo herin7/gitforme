@@ -94,7 +94,7 @@ const buildHierarchy = (flatList) => {
 };
 
 
-const RepoDetailView = () => {
+const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
     const { username, reponame } = useParams();
 
     // State management for all repository data and UI status
@@ -182,13 +182,26 @@ const RepoDetailView = () => {
 
             } catch (err) {
                 let errorMessage = 'An unexpected error occurred.';
-                if (axios.isAxiosError(err) && err.response) {
+                let isRateLimit = false;
+                let isApiDown = false;
+                if (axios.isAxiosError(err)) {
+                  if (!err.response) {
+                    // Network error or server down
+                    errorMessage = 'The backend server or GitHub API is currently unreachable.';
+                    isApiDown = true;
+                  } else {
                     switch (err.response.status) {
                         case 404:
                             errorMessage = `Repository not found. Please ensure '${username}/${reponame}' is a valid public repository.`;
                             break;
                         case 403:
-                            errorMessage = 'Access forbidden. This could be due to GitHub API rate limits or repository permissions. Please try again later.';
+                            // Try to detect rate limit from response
+                            if (err.response.data && typeof err.response.data.message === 'string' && err.response.data.message.toLowerCase().includes('rate limit')) {
+                                errorMessage = 'GitHub API rate limit exceeded. Please try again later or log in with GitHub for higher limits.';
+                                isRateLimit = true;
+                            } else {
+                                errorMessage = 'Access forbidden. This could be due to GitHub API rate limits or repository permissions. Please try again later.';
+                            }
                             break;
                         case 401:
                             errorMessage = 'Authentication error. Please ensure you are logged in and have the necessary permissions.';
@@ -196,11 +209,18 @@ const RepoDetailView = () => {
                         default:
                             errorMessage = `Failed to fetch repository data. Server responded with status ${err.response.status}.`;
                     }
+                  }
                 } else if (err instanceof Error) {
                     errorMessage = err.message;
                 }
                 setError(errorMessage);
                 toast.error(errorMessage);
+                if (isRateLimit && typeof onRateLimitExceeded === 'function') {
+                  onRateLimitExceeded();
+                }
+                if (isApiDown && typeof onApiDown === 'function') {
+                  onApiDown();
+                }
             } finally {
                 setIsLoading(false);
             }
