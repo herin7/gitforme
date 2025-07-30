@@ -156,7 +156,11 @@ const RepoDetailView = () => {
                 setFlatTree(treeData);
                 setHierarchicalTree(buildHierarchy(treeData));
                 setContributors(getData(results[2], []));
-                const deploymentsData = getData(results[3], []);
+                let deploymentsData = getData(results[3], []);
+                // Fix: Ensure deploymentsData is always an array
+                if (!Array.isArray(deploymentsData)) {
+                    deploymentsData = [];
+                }
                 setIssues(getData(results[4], { open: [], closed: [] }));
                 setGoodFirstIssues(getData(results[5], []));
                 setInsights(getData(results[6], null));
@@ -328,6 +332,7 @@ BODY: ${issue.body || 'No description.'}
         toast.success("Super Context created and ready to copy!");
     };
 
+
     if (isLoading) return <FullPageLoader />;
 
     if (error) return (
@@ -348,6 +353,18 @@ BODY: ${issue.body || 'No description.'}
             </div>
         </div>
     );
+
+    if (!Array.isArray(hierarchicalTree) || hierarchicalTree.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 text-center font-sans">
+                <div className="bg-white border-2 border-yellow-400 rounded-xl shadow-[8px_8px_0px_rgba(251,191,36,0.5)] p-8 max-w-lg w-full">
+                    <div className="text-5xl mb-4">📁</div>
+                    <h2 className="text-3xl font-bold text-yellow-600 mb-3">No file structure found</h2>
+                    <p className="text-gray-700 text-lg mb-6 bg-yellow-50 p-3 border border-yellow-200 rounded-lg">This repository may be empty, or there was a problem fetching its contents.</p>
+                </div>
+            </div>
+        );
+    }
 
     const TabButton = ({ name, label }) => (
         <button onClick={() => setActiveTab(name)} className={`font-bold py-3 px-5 transition-colors duration-200 relative text-lg ${activeTab === name ? 'text-black' : 'text-gray-500 hover:text-black'}`}>

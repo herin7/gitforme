@@ -4,8 +4,31 @@ import { Icon } from './Iconsfile';
 
 export const DirectoryStructure = ({ tree, onFileSelect, hotspots }) => {
     const [expandedDirs, setExpandedDirs] = useState(new Set());
+    const [error, setError] = useState(null);
     const hotspotMap = useMemo(() => new Map((hotspots || []).map(h => [h.path, h.churn])), [hotspots]);
     const maxChurn = useMemo(() => Math.max(1, ...hotspots.map(h => h.churn)), [hotspots]);
+
+    useEffect(() => {
+        // Add a quick check for debugging: if tree is empty, log a warning
+        if (!tree || tree.length === 0) {
+            // Try to detect if user is not logged in by checking for a global auth state or window variable
+            let isLoggedIn = true;
+            if (window && window.__GITFORME_AUTH__ !== undefined) {
+                isLoggedIn = window.__GITFORME_AUTH__;
+            }
+            // If not logged in, show a login-required message
+            if (!isLoggedIn) {
+                setError('You must be logged in to view the file structure. Please log in and try again.');
+            } else {
+                setError('No file structure found. This may be due to a failed API call, authentication issue, or browser compatibility issue.');
+            }
+            // Log for developer
+            // eslint-disable-next-line no-console
+            console.warn('DirectoryStructure: tree prop is empty or undefined.', tree, 'Logged in:', isLoggedIn);
+        } else {
+            setError(null);
+        }
+    }, [tree]);
 
     const getHotspotIcon = (path) => {
         if (!hotspotMap.has(path)) return null;
@@ -47,10 +70,22 @@ export const DirectoryStructure = ({ tree, onFileSelect, hotspots }) => {
             </li>
         );
     };
-    
+
     return (
         <div>
-            <ul>{tree.map(renderNode)}</ul>
+            {error && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <strong>File structure could not be loaded.</strong><br />
+                    {error}
+                    {error.includes('log in') && (
+                        <div className="mt-2">
+                            <a href="/login" className="text-blue-600 underline">Go to Login</a>
+                        </div>
+                    )}
+                    <br />Check the browser console for more details.
+                </div>
+            )}
+            {!error && tree && tree.length > 0 && <ul>{tree.map(renderNode)}</ul>}
             <div className="mt-6 p-3 bg-gray-50 border-2 border-gray-200 rounded-lg text-sm text-gray-600">
                 <h4 className="font-bold mb-2 text-gray-700">Hotspot Legend:</h4>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
