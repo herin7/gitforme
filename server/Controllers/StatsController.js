@@ -3,6 +3,14 @@
 const User = require('../models/UserModel');
 const redisClient = require('../util/RediaClient');
 
+/**
+ * Gets the total count of registered users.
+ * The result is cached in Redis for 1 hour to reduce database load.
+ * This endpoint is public and used for display on the landing page.
+ * @route GET /api/stats/user-count
+ * @access Public
+ */
+
 exports.getUserCount = async (req, res) => {
     const cacheKey = 'stats:user_count';
 
