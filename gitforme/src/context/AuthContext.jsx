@@ -58,7 +58,7 @@
                 const apiServerUrl = import.meta.env.VITE_API_URL;
                 await axios.post(`${apiServerUrl}/api/auth/logout`, {}, { withCredentials: true });
             } catch (error) {
-                // ignore
+                // Logout API call failed, but continue with local state cleanup to ensure the user is logged out locally.
             } finally {
                 setUser(null);
                 setIsAuthenticated(false);
