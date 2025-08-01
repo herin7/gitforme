@@ -39,9 +39,10 @@
             verifyUser();
             // Cross-tab/session sync for login/logout
             const handleStorage = (e) => {
-                if (e.key === 'gitforme_auth_state') {
-                    verifyUser();
+                if (e.key !== 'gitforme_auth_state') {
+                    return;
                 }
+                verifyUser();
             };
             window.addEventListener('storage', handleStorage);
             return () => window.removeEventListener('storage', handleStorage);
