@@ -1,5 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState,useEffect } from 'react';
+import apiClient from '../api/axiosConfig';
 import {
     SparkleIcon,
     BrainCircuitIcon,
@@ -12,6 +14,40 @@ import FeatureCard from '../cards/FeatureCard';
 import StepCard from '../cards/StepCard';
 
 const LandingPageContent = () => {
+    const [userCount, setUserCount] = useState(null);
+    const [isCountLoading, setIsCountLoading] = useState(true);
+    useEffect(() => {
+        const fetchUserCount = async () => {
+            try {
+                // The VITE_API_URL is handled by the default axios config
+                const response = await apiClient.get('/api/stats/user-count');
+                if (response.data && typeof response.data.count === 'number') {
+                    setUserCount(response.data.count);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user count:", error);
+                // On error, userCount remains null, so we can show a fallback.
+            } finally {
+                setIsCountLoading(false);
+            }
+        };
+
+        fetchUserCount();
+    }, []); 
+
+    
+    const renderUserCount = () => {
+        if (isCountLoading) {
+            return '...'; // Simple loading state
+        }
+        if (userCount !== null) {
+            // Format number with commas, e.g., 2,500
+            return `${userCount.toLocaleString()}+`;
+        }
+        // Fallback for API errors
+        return '2,000+';
+    };
+
     const sectionVariants = {
         hidden: { opacity: 0, y: 30 },
         visible: {
@@ -42,7 +78,7 @@ const LandingPageContent = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L15 8h6l-4.9 3.6L18 18l-6-4.4L6 18l1.9-6.4L3 8h6z" />
                     </svg>
-                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have 2000+ users now!</span>
+                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have {renderUserCount()} users now!</span>
                 </div>
             </motion.div>
             {/* --- Updated Service Paused Notification --- */}

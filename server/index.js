@@ -9,6 +9,8 @@ const redisClient = require("./util/RediaClient");
 const authRoute = require("./Routes/AuthRoute");
 const repoRoute = require("./Routes/RepoRoutes");
 const insightsRoutes = require('./Routes/InsightRoutes'); 
+//added the route here
+const statsRoute = require('./Routes/StatsRoute');
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -22,7 +24,7 @@ const allowedOrigins = [
   'https://gitforme-bot.onrender.com',
   // 'https://gitforme.onrender.com',
   'https://gitforme-jbsp.vercel.app',
-  // 'http://localhost:5173'
+  'http://localhost:5173'
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -74,6 +76,8 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/auth", authRoute);
+//Status route added
+app.use("/api/stats", statsRoute);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/github", requireAuth);
