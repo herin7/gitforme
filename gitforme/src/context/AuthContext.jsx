@@ -15,28 +15,21 @@
         useEffect(() => {
             const verifyUser = async () => {
                 try {
-                      const apiServerUrl = import.meta.env.VITE_API_URL;
+                    const apiServerUrl = import.meta.env.VITE_API_URL;
                     const { data } = await axios.post(
                         `${apiServerUrl}/api/auth/verifyUser`,
                         {},
                         { withCredentials: true }
                     );
-                    console.log("Data from /verifyUser:", data); 
-
                     if (data && data.status) {
-                        const userData = data.user || data; 
-                        
+                        const userData = data.user || data;
                         setUser(userData);
                         setIsAuthenticated(true);
                     } else {
                         setUser(null);
                         setIsAuthenticated(false);
                     }
-
-
-                } 
-                catch (error) {
-                    console.error("Verification on load failed:", error);
+                } catch (error) {
                     setUser(null);
                     setIsAuthenticated(false);
                 } finally {
@@ -44,11 +37,20 @@
                 }
             };
             verifyUser();
+            // Cross-tab/session sync for login/logout
+            const handleStorage = (e) => {
+                if (e.key === 'gitforme_auth_state') {
+                    verifyUser();
+                }
+            };
+            window.addEventListener('storage', handleStorage);
+            return () => window.removeEventListener('storage', handleStorage);
         }, []);
 
         const login = (userData) => {
             setUser(userData);
             setIsAuthenticated(true);
+            localStorage.setItem('gitforme_auth_state', Date.now().toString());
         };
 
         const logout = async () => {
@@ -56,10 +58,11 @@
                 const apiServerUrl = import.meta.env.VITE_API_URL;
                 await axios.post(`${apiServerUrl}/api/auth/logout`, {}, { withCredentials: true });
             } catch (error) {
-                console.error("Logout failed:", error);
+                // ignore
             } finally {
                 setUser(null);
                 setIsAuthenticated(false);
+                localStorage.setItem('gitforme_auth_state', Date.now().toString());
             }
         };
         

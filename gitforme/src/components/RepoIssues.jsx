@@ -17,7 +17,7 @@ export const IssuesView = ({ issues, onAddContext, onShowStory }) => {
                                 <a href={issue.html_url} target="_blank" rel="noopener noreferrer" className="font-bold text-xl hover:text-amber-700">{issue.title}</a>
                                 <p className="text-base text-gray-600">#{issue.number} opened by {issue.user.login}</p>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0 mt-1">
+                            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0 mt-1 flex-wrap items-start sm:items-center">
                                 <button onClick={() => onShowStory(issue)} className="px-3 py-1 bg-blue-200 text-blue-800 text-sm font-semibold border-2 border-blue-800 rounded-lg hover:bg-blue-300 transition-colors whitespace-nowrap">View Story</button>
                                 <button onClick={() => onAddContext(issue)} className="px-3 py-1 bg-amber-200 text-amber-800 text-sm font-semibold border-2 border-amber-800 rounded-lg hover:bg-amber-300 transition-colors whitespace-nowrap">Add Context</button>
                             </div>
