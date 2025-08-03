@@ -22,8 +22,8 @@ const allowedOrigins = [
   'https://www.gitforme.tech',
   'https://gitforme-jbsp.vercel.app',
   'https://gitforme-bot.onrender.com',
-  // 'http://localhost:5173',
-  // 'http://localhost:5173/',
+  'http://localhost:5173',
+  'http://localhost:5173/',
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -46,6 +46,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // 3. Session Management
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(
   session({
     store: redisStore,
@@ -53,11 +54,13 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, //disable in dev mode
+      secure: isProduction, //disable in dev mode
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, 
-      sameSite: 'none', //disable in dev mode
-      // sameSite: 'lax', //Use this in dev mode 
+      //reduced the max age to session checking.
+      // maxAge: 1000, 
+      // sameSite: 'none', //disable in dev mode
+      sameSite: isProduction? 'none':'lax', //Use this in dev mode 
     },
   })
 );

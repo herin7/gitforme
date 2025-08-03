@@ -84,7 +84,13 @@ const GitformeUi = () => {
   }, []);
 
   const handleGitHubLogin = () => {
-    window.location.href = `${apiServerUrl}/api/auth/github`;
+    const redirectUrl = `${apiServerUrl}/api/auth/github`
+    try {
+    console.log(`Attempting to redirect to: ${redirectUrl}`);
+    window.location.href = redirectUrl;
+  } catch (error) {
+    console.error("THE REDIRECT FAILED! The browser threw an error:", error);
+  }
   };
 
   const handleLogout = async () => {
