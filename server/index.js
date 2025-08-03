@@ -22,8 +22,8 @@ const allowedOrigins = [
   'https://www.gitforme.tech',
   'https://gitforme-jbsp.vercel.app',
   'https://gitforme-bot.onrender.com',
-  'http://localhost:5173',
-  'http://localhost:5173/',
+  // 'http://localhost:5173',
+  // 'http://localhost:5173/',
 ];
 app.use(cors({
   origin: function (origin, callback) {
