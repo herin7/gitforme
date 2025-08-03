@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@octokit/rest": "^22.0.0",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "connect-redis": "^7.1.1",

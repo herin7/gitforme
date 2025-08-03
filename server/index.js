@@ -20,11 +20,10 @@ redisClient.on('connect', () => console.log('Connected to Redis'));
 const redisStore = new RedisStore({ client: redisClient, prefix: "session:" });
 const allowedOrigins = [
   'https://www.gitforme.tech',
-  // 'https://thankful-dune-02c682800.2.azurestaticapps.net',
-  'https://gitforme-bot.onrender.com',
-  // 'https://gitforme.onrender.com',
   'https://gitforme-jbsp.vercel.app',
-  'http://localhost:5173'
+  'https://gitforme-bot.onrender.com',
+  // 'http://localhost:5173',
+  // 'http://localhost:5173/',
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -54,10 +53,11 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, 
+      secure: true, //disable in dev mode
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, 
-      sameSite: 'none', 
+      sameSite: 'none', //disable in dev mode
+      // sameSite: 'lax', //Use this in dev mode 
     },
   })
 );

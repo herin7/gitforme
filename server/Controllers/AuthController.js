@@ -45,11 +45,12 @@ exports.githubCallback = async (req, res) => {
         req.session.userId = user._id;
 
         // Redirect back to the frontend
-        res.redirect('https://www.gitforme.tech/');
+        // res.redirect('https://www.gitforme.tech/');
+        res.redirect('http://localhost:5173/');
 
     } catch (error) {
         console.error('Error during GitHub authentication:', error.message);
-        res.redirect('https://www.gitforme.tech/login?error=auth_failed');
+        res.redirect('http://localhost:5173/login?error=auth_failed');
     }
 };
 
