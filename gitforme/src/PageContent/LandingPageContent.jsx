@@ -1,4 +1,5 @@
 import React from 'react';
+import { AdBlockDetectedWrapper } from "adblock-detect-react";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState,useEffect } from 'react';
 import apiClient from '../api/axiosConfig';
@@ -70,6 +71,34 @@ const LandingPageContent = () => {
 
     return (
         <motion.div initial="hidden" animate="visible" exit={{ opacity: 0, transition: { duration: 0.5 } }}>
+            <AdBlockDetectedWrapper>
+                <motion.div
+                    variants={itemVariants}
+                    className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md shadow-md"
+                    role="alert"
+                >
+                    <div className="flex items-center">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 mr-3 text-yellow-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18.17a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                            />
+                        </svg>
+                        <span className="font-semibold text-sm">
+                            We noticed you are using an ad blocker. Please disable it, as this might make the login procedure harder to complete...
+                        </span>
+                    </div>
+                </motion.div>
+            </AdBlockDetectedWrapper>
+
             <motion.div
                 variants={itemVariants}
                 className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md shadow-md animate-pulse"
