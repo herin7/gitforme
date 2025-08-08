@@ -1,5 +1,8 @@
 import React from 'react';
+import { AdBlockDetectedWrapper } from "adblock-detect-react";
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState,useEffect } from 'react';
+import apiClient from '../api/axiosConfig';
 import {
     SparkleIcon,
     BrainCircuitIcon,
@@ -12,6 +15,41 @@ import FeatureCard from '../cards/FeatureCard';
 import StepCard from '../cards/StepCard';
 
 const LandingPageContent = () => {
+    const [userCount, setUserCount] = useState(null);
+    const [isCountLoading, setIsCountLoading] = useState(true);
+    // Fetch the dynamic user count from the backend when the component mounts.
+    useEffect(() => {
+        const fetchUserCount = async () => {
+            try {
+                // The VITE_API_URL is handled by the default axios config
+                const response = await apiClient.get('/api/stats/user-count');
+                if (response.data && typeof response.data.count === 'number') {
+                    setUserCount(response.data.count);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user count:", error);
+                // On error, userCount remains null, so we can show a fallback.
+            } finally {
+                setIsCountLoading(false);
+            }
+        };
+
+        fetchUserCount();
+    }, []); 
+
+    
+    const renderUserCount = () => {
+        if (isCountLoading) {
+            return '...'; // Simple loading state
+        }
+        if (userCount !== null) {
+            // Format number with commas, e.g., 2,500
+            return `${userCount.toLocaleString()}+`;
+        }
+        // Fallback for API errors
+        return '2,000+';
+    };
+
     const sectionVariants = {
         hidden: { opacity: 0, y: 30 },
         visible: {
@@ -33,6 +71,34 @@ const LandingPageContent = () => {
 
     return (
         <motion.div initial="hidden" animate="visible" exit={{ opacity: 0, transition: { duration: 0.5 } }}>
+            <AdBlockDetectedWrapper>
+                <motion.div
+                    variants={itemVariants}
+                    className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md shadow-md"
+                    role="alert"
+                >
+                    <div className="flex items-center">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 mr-3 text-yellow-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18.17a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                            />
+                        </svg>
+                        <span className="font-semibold text-sm">
+                            We noticed you are using an ad blocker. Please disable it, as this might make the login procedure harder to complete...
+                        </span>
+                    </div>
+                </motion.div>
+            </AdBlockDetectedWrapper>
+
             <motion.div
                 variants={itemVariants}
                 className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md shadow-md animate-pulse"
@@ -42,7 +108,19 @@ const LandingPageContent = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L15 8h6l-4.9 3.6L18 18l-6-4.4L6 18l1.9-6.4L3 8h6z" />
                     </svg>
-                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have 2000+ users now!</span>
+                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have {renderUserCount()} users now!</span>
+                </div>
+            </motion.div>
+             <motion.div
+                variants={itemVariants}
+                className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-800 rounded-md shadow-md"
+                role="status"
+            >
+                <div className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-semibold text-sm">We're back! The login issues have been resolved. Thanks for your patience.</span>
                 </div>
             </motion.div>
             {/* --- Updated Service Paused Notification --- */}

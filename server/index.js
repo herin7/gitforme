@@ -9,6 +9,8 @@ const redisClient = require("./util/RediaClient");
 const authRoute = require("./Routes/AuthRoute");
 const repoRoute = require("./Routes/RepoRoutes");
 const insightsRoutes = require('./Routes/InsightRoutes'); 
+//added the route here
+const statsRoute = require('./Routes/StatsRoute');
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -18,11 +20,10 @@ redisClient.on('connect', () => console.log('Connected to Redis'));
 const redisStore = new RedisStore({ client: redisClient, prefix: "session:" });
 const allowedOrigins = [
   'https://www.gitforme.tech',
-  // 'https://thankful-dune-02c682800.2.azurestaticapps.net',
-  'https://gitforme-bot.onrender.com',
-  // 'https://gitforme.onrender.com',
   'https://gitforme-jbsp.vercel.app',
-  // 'http://localhost:5173'
+  'https://gitforme-bot.onrender.com',
+  // 'http://localhost:5173',
+  // 'http://localhost:5173/',
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -45,6 +46,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // 3. Session Management
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(
   session({
     store: redisStore,
@@ -52,10 +54,13 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: true, 
+      secure: isProduction, //disable in dev mode
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, 
-      sameSite: 'none', 
+      //reduced the max age to session checking.
+      // maxAge: 1000, 
+      // sameSite: 'none', //disable in dev mode
+      sameSite: isProduction? 'none':'lax', //Use this in dev mode 
     },
   })
 );
@@ -74,6 +79,8 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/auth", authRoute);
+//Status route added
+app.use("/api/stats", statsRoute);
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
 app.use("/api/github", requireAuth);

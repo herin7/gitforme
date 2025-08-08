@@ -1,3 +1,6 @@
+/*
+File: gitforme/src/components/RepoDetailView.jsx
+*/
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
@@ -6,6 +9,9 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Import the new component
+import GitHistoryTimeline from './GitHistoryTimeline';
 
 // Assuming these are your actual, fully implemented components
 import { FileGraph } from './FileGraph';
@@ -25,18 +31,12 @@ import { GoodFirstIssues } from '../cards/GoodFirstIssues';
 import { DependencyDashboard } from './DependencyDashboard';
 
 
-/**
- * A robust helper to copy text to the clipboard, with a fallback for older browsers
- * or insecure contexts (like http).
- * @param {string} text The text to copy.
- */
 const copyToClipboard = (text) => {
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text)
             .then(() => toast.success("Context copied to clipboard!"))
             .catch(() => toast.error("Failed to copy using modern API."));
     } else {
-        // Fallback for iFrames or non-https environments
         const textArea = document.createElement('textarea');
         textArea.value = text;
         textArea.style.position = 'fixed';
@@ -58,12 +58,6 @@ const copyToClipboard = (text) => {
     }
 };
 
-/**
- * Converts a flat list of file paths from the Git Tree API into a nested,
- * hierarchical structure suitable for tree view components.
- * @param {Array} flatList - The array of file objects from the GitHub API.
- * @returns {Array} A nested array of nodes.
- */
 const buildHierarchy = (flatList) => {
     if (!flatList || flatList.length === 0) return [];
     const tree = [];
@@ -123,7 +117,9 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
     const [reportContent, setReportContent] = useState('');
     const [isReportLoading, setIsReportLoading] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
-
+    const [timelineData, setTimelineData] = useState(null);
+    const [isTimelineLoading, setIsTimelineLoading] = useState(true);
+    
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
@@ -144,7 +140,8 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
                     axios.get(`${apiBase}/good-first-issues`, { withCredentials: true }),
                     axios.get(`${apiBase}/insights`, { withCredentials: true }),
                     axios.get(`${apiBase}/hotspots`, { withCredentials: true }),
-                    axios.get(`${apiBase}/insights/dependencies`, { withCredentials: true })
+                    axios.get(`${apiBase}/insights/dependencies`, { withCredentials: true }),
+                    axios.get(`${apiBase}/timeline`, { withCredentials: true }) ,
                 ]);
 
                 const getData = (result, defaultValue) => result.status === 'fulfilled' ? result.value.data : defaultValue;
@@ -156,8 +153,10 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
                 setFlatTree(treeData);
                 setHierarchicalTree(buildHierarchy(treeData));
                 setContributors(getData(results[2], []));
+                setTimelineData(getData(results[9], null));
+                setIsTimelineLoading(false);
+
                 let deploymentsData = getData(results[3], []);
-                // Fix: Ensure deploymentsData is always an array
                 if (!Array.isArray(deploymentsData)) {
                     deploymentsData = [];
                 }
@@ -185,41 +184,39 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
                 let isRateLimit = false;
                 let isApiDown = false;
                 if (axios.isAxiosError(err)) {
-                  if (!err.response) {
-                    // Network error or server down
-                    errorMessage = 'The backend server or GitHub API is currently unreachable.';
-                    isApiDown = true;
-                  } else {
-                    switch (err.response.status) {
-                        case 404:
-                            errorMessage = `Repository not found. Please ensure '${username}/${reponame}' is a valid public repository.`;
-                            break;
-                        case 403:
-                            // Try to detect rate limit from response
-                            if (err.response.data && typeof err.response.data.message === 'string' && err.response.data.message.toLowerCase().includes('rate limit')) {
-                                errorMessage = 'GitHub API rate limit exceeded. Please try again later or log in with GitHub for higher limits.';
-                                isRateLimit = true;
-                            } else {
-                                errorMessage = 'Access forbidden. This could be due to GitHub API rate limits or repository permissions. Please try again later.';
-                            }
-                            break;
-                        case 401:
-                            errorMessage = 'Authentication error. Please ensure you are logged in and have the necessary permissions.';
-                            break;
-                        default:
-                            errorMessage = `Failed to fetch repository data. Server responded with status ${err.response.status}.`;
+                    if (!err.response) {
+                        errorMessage = 'The backend server or GitHub API is currently unreachable.';
+                        isApiDown = true;
+                    } else {
+                        switch (err.response.status) {
+                            case 404:
+                                errorMessage = `Repository not found. Please ensure '${username}/${reponame}' is a valid public repository.`;
+                                break;
+                            case 403:
+                                if (err.response.data && typeof err.response.data.message === 'string' && err.response.data.message.toLowerCase().includes('rate limit')) {
+                                    errorMessage = 'GitHub API rate limit exceeded. Please try again later or log in with GitHub for higher limits.';
+                                    isRateLimit = true;
+                                } else {
+                                    errorMessage = 'Access forbidden. This could be due to GitHub API rate limits or repository permissions. Please try again later.';
+                                }
+                                break;
+                            case 401:
+                                errorMessage = 'Authentication error. Please ensure you are logged in and have the necessary permissions.';
+                                break;
+                            default:
+                                errorMessage = `Failed to fetch repository data. Server responded with status ${err.response.status}.`;
+                        }
                     }
-                  }
                 } else if (err instanceof Error) {
                     errorMessage = err.message;
                 }
                 setError(errorMessage);
                 toast.error(errorMessage);
                 if (isRateLimit && typeof onRateLimitExceeded === 'function') {
-                  onRateLimitExceeded();
+                    onRateLimitExceeded();
                 }
                 if (isApiDown && typeof onApiDown === 'function') {
-                  onApiDown();
+                    onApiDown();
                 }
             } finally {
                 setIsLoading(false);
@@ -233,11 +230,9 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
             setFocusedNode(fileNode);
             return;
         }
-
         const apiServerUrl = import.meta.env.VITE_API_URL;
         const apiBase = `${apiServerUrl}/api/github/${username}/${reponame}`;
 
-        // Fetch file content via backend
         try {
             const contentRes = await axios.get(`${apiBase}/contents/${fileNode.path}`, {
                 withCredentials: true,
@@ -248,11 +243,11 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
             console.error("Failed to fetch file content:", err);
             toast.error("Could not load file content. It might be binary, too large, or empty.");
         }
-
-        // Fetch commit history for the selected file
+        
         setSelectedFileForHistory({ ...fileNode, owner: username, repo: reponame });
         setIsHistoryLoading(true);
         setCommitHistory([]);
+
         try {
             const historyRes = await axios.get(`${apiBase}/commits`, {
                 params: { path: fileNode.path },
@@ -272,6 +267,9 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
         const days = Math.floor(ms / (1000 * 60 * 60 * 24));
         const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         return `${days}d ${hours}h`;
+    };
+    const handleCommitSelect = async (commit) => {
+        console.log("Selected commit from timeline:", commit);
     };
 
     const handleAddSingleIssueToContext = (issue) => {
@@ -406,15 +404,22 @@ BODY: ${issue.body || 'No description.'}
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
                     <div className="bg-white border-2 border-black rounded-xl shadow-[8px_8px_0px_rgba(0,0,0,1)] h-full flex flex-col">
-                        <div className="flex border-b-2 border-black mb-1 flex-shrink-0">
+                        <div className="flex border-b-2 border-black mb-1 flex-shrink-0 flex-wrap">
                             <TabButton name="directory" label="Directory" />
                             <TabButton name="graph" label="File Map" />
+                            {/* THIS IS THE MISSING BUTTON */}
+                            <TabButton name="timeline" label="Timeline" />
                             <TabButton name="issues" label="Issues" />
                             <TabButton name="insights" label="Insights" />
                         </div>
                         <div className="flex-grow overflow-y-auto p-2 sm:p-4 min-h-[40rem]">
                             {activeTab === 'directory' && <DirectoryStructure tree={hierarchicalTree} onFileSelect={handleFileSelect} hotspots={hotspots} />}
                             {activeTab === 'graph' && <FileGraph treeData={flatTree} onFileSelect={handleFileSelect} onFolderSelect={setFocusedNode} focusedNode={focusedNode} hotspots={hotspots} />}
+                            {activeTab === 'timeline' && (
+                                isTimelineLoading 
+                                ? <SkeletonLoader /> 
+                                : <GitHistoryTimeline timelineData={timelineData} onCommitSelect={handleCommitSelect} />
+                            )}
                             {activeTab === 'issues' && <IssuesView issues={issues} onAddContext={handleAddSingleIssueToContext} onShowStory={setStoryModalIssue} />}
                             {activeTab === 'insights' && (
                                 <div>
