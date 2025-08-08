@@ -12,12 +12,12 @@ export const IssuesView = ({ issues, onAddContext, onShowStory }) => {
             <ul className="space-y-3">
                 {filteredIssues.length > 0 ? filteredIssues.map(issue => (
                     <li key={issue.id} className="p-4 bg-[#FEF9F2] border-2 border-black rounded-lg">
-                        <div className="flex justify-between items-start gap-4">
-                            <div className="flex-grow">
-                                <a href={issue.html_url} target="_blank" rel="noopener noreferrer" className="font-bold text-xl hover:text-amber-700">{issue.title}</a>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                            <div className="flex-grow min-w-0">
+                                <a href={issue.html_url} target="_blank" rel="noopener noreferrer" className="font-bold text-xl hover:text-amber-700 break-words">{issue.title}</a>
                                 <p className="text-base text-gray-600">#{issue.number} opened by {issue.user.login}</p>
                             </div>
-                            <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0 mt-1 flex-wrap items-start sm:items-center">
+                            <div className="flex flex-col xs:flex-row gap-2 flex-shrink-0 sm:mt-1">
                                 <button onClick={() => onShowStory(issue)} className="px-3 py-1 bg-blue-200 text-blue-800 text-sm font-semibold border-2 border-blue-800 rounded-lg hover:bg-blue-300 transition-colors whitespace-nowrap">View Story</button>
                                 <button onClick={() => onAddContext(issue)} className="px-3 py-1 bg-amber-200 text-amber-800 text-sm font-semibold border-2 border-amber-800 rounded-lg hover:bg-amber-300 transition-colors whitespace-nowrap">Add Context</button>
                             </div>
