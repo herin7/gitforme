@@ -84,7 +84,7 @@ Want to run GitForMe on your own machine? Here’s how.
 
 1.  **Clone the Repository**
     ```sh
-    git clone [https://github.com/herin7/gitforme.git](https://github.com/herin7/gitforme.git)
+    git clone https://github.com/herin7/gitforme.git
     cd gitforme
     ```
 
