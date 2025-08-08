@@ -60,6 +60,12 @@ GitForMe uses a microservice architecture to separate concerns and ensure scalab
   </div>
 </div>
 
+## 🎥 Watch How GitForMe Works
+
+* Get a quick walkthrough of the platform in under 5 minutes!
+
+[GitForMe Explainer Video](https://youtu.be/5_eIceKWo7o)
+
 ## 🚀 Get It Running Locally
 
 Want to run GitForMe on your own machine? Here’s how.
