@@ -144,6 +144,13 @@ const GitformeUi = () => {
         }
     };
 
+  //load repo if visiting directly via browser's search bar
+  useEffect(() => {
+    if (username && reponame && isAuthenticated){
+      handleCookRepoUrl()
+    }
+  },[isAuthenticated, username, reponame])
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
