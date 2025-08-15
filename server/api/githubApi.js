@@ -11,7 +11,12 @@ const githubApi = axios.create({
 });
 
 exports.fetchReadme = async (req, res) => {
-  const { username, reponame } = req.params;
+  const { username } = req.params;
+  let { reponame } = req.params;
+  // Strip .git from end if present
+  if (reponame.endsWith('.git')) {
+    reponame = reponame.slice(0, -4);
+  }
 
   try {
     const githubApi = await createGithubApi(req.session);
@@ -24,7 +29,12 @@ exports.fetchReadme = async (req, res) => {
 };
 
 exports.fetchRepoDetails = async (req, res) => {
-  const { username, reponame } = req.params;
+  const { username } = req.params;
+  let { reponame } = req.params;
+  // Strip .git from end if present
+  if (reponame.endsWith('.git')) {
+    reponame = reponame.slice(0, -4);
+  }
   const cacheKey = `repo:${username}:${reponame}`;
 
   try {
