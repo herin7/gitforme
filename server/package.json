@@ -9,6 +9,7 @@
     "dotenv": "^17.1.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.2",
     "redis": "^4.7.1",
@@ -20,6 +21,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"No tests specified\" && exit 0"
+    "test": "echo \"No tests specified\" && exit 0",
+    "docs:swagger": "node scripts/swaggerGen.js",
+    "docs:yaml": "node scripts/export-yaml.js"
   }
 }

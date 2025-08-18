@@ -12,6 +12,9 @@ const insightsRoutes = require('./Routes/InsightRoutes');
 //added the route here
 const statsRoute = require('./Routes/StatsRoute');
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./docs/swagger.json");
+
 const PORT = process.env.PORT || 3000;
 const app = express();
 app.set('trust proxy', 1); 
@@ -88,13 +91,8 @@ app.use("/api/github", requireAuth);
 app.use("/api/github", insightsRoutes);
 app.use("/api/github", repoRoute);     
 
-app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return res.status(500).json({ message: 'Logout failed' });
-    res.clearCookie('token'); 
-    res.json({ status: true });
-  });
-});
+// Serve Swagger UI Docs...
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 // const PORT = process.env.PORT || 3000;
