@@ -1,7 +1,8 @@
 const router = require('express').Router();
-const { fetchRepoDetails, fetchReadme } = require('../api/githubApi');
+const { fetchReadme } = require('../api/githubApi');
 const {
     fetchGitTree,
+    fetchRepoDetails,
     getRepoTimeline,
     fetchIssues,
     fetchRepoInsights,
