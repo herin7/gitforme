@@ -12,7 +12,8 @@ const {
     fetchContributors,
     fetchDeployments,
     fetchFileCommits,
-    fetchFileContent,
+    fetchRepoFileContents,
+    
 } = require('../Controllers/GithubController');
 
 const { fetchDependencyHealth } = require('../Controllers/InsightController');
@@ -31,7 +32,7 @@ const { fetchDependencyHealth } = require('../Controllers/InsightController');
  *       500:
  *         description: Failed to fetch file content.
  */
-router.get('/repos/:username/:reponame/file/:path', fetchFileContent);
+router.get('/repos/:username/:reponame/file/:path', fetchRepoFileContents);
 
 /**
  * @swagger

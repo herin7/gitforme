@@ -12,6 +12,7 @@
     "js-yaml": "^4.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.2",
+    "path-to-regexp": "^8.2.0",
     "redis": "^4.7.1",
     "swagger-ui-express": "^5.0.1",
     "typhonjs-escomplex": "^0.1.0"
