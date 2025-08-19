@@ -50,8 +50,7 @@ exports.githubCallback = async (req, res) => {
 
     } catch (error) {
         console.error('Error during GitHub authentication:', error.message);
-        res.redirect('http://www.gitforme.tech/login?error=auth_failed');
-        // res.redirect('http://localhost:5173/login?error=auth_failed');
+        res.redirect('http://localhost:5173/login?error=auth_failed');
     }
 };
 
