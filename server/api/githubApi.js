@@ -1,17 +1,6 @@
 const axios = require('axios');
-const redis = require('redis');
 const redisClient = require('../util/RediaClient');
 const User = require('../models/UserModel');
-
-const githubApi = axios.create({
-  baseURL: 'https://api.github.com',
-  headers: {
-    'Accept': 'application/vnd.github.v3+json',
-  },
-});
-
-const stripGitSuffix = (name) =>
-  name.endsWith('.git') ? name.slice(0, -4) : name;
 
 exports.fetchReadme = async (req, res) => {
   const { username } = req.params;
@@ -85,52 +74,3 @@ const createGithubApi = async (session) => {
   return axios.create({ baseURL: 'https://api.github.com', headers });
 };
 
-exports.fetchUserReposController = async (req, res) => {
-  const userId = req.session.userId;
-  const cacheKey = `github:repos:${userId}`;
-
-  try {
-    const cachedRepos = await redisClient.get(cacheKey);
-    if (cachedRepos) {
-      console.log(`Cache hit for user ${userId} repos`);
-      return res.json(JSON.parse(cachedRepos));
-    }
-
-    console.log(`Cache miss for user ${userId} repos`);
-
-    const user = await User.findById(userId);
-    if (!user?.githubAccessToken) {
-      return res.status(403).json({
-        message: 'GitHub account not linked or access token missing.',
-      });
-    }
-
-    const userToken = user.githubAccessToken;
-
-    const response = await axios.get(
-      'https://api.github.com/user/repos?sort=updated&per_page=100',
-      {
-        headers: {
-          Authorization: `token ${userToken}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      }
-    );
-
-    const userRepos = response.data;
-
-    await redisClient.set(cacheKey, JSON.stringify(userRepos), {
-      EX: 3600,
-    });
-
-    res.json(userRepos);
-  } catch (error) {
-    console.error(
-      'Error fetching user repositories:',
-      error.response?.data || error.message
-    );
-    res.status(error.response?.status || 500).json({
-      message: 'Failed to fetch repositories from GitHub.',
-    });
-  }
-};

@@ -1,5 +1,7 @@
+// server/Controllers/AuthController.js
 const User = require('../models/UserModel');
 const axios = require('axios');
+const config = require('../config/envconfig');
 
 exports.githubCallback = async (req, res) => {
     const { code } = req.query;
@@ -40,34 +42,36 @@ exports.githubCallback = async (req, res) => {
             await user.save();
         }
 
-        // --- IMPORTANT: Session is created here ---
-        // This is the primary way your app knows the user is logged in.
+        // Create session
         req.session.userId = user._id;
 
-        // Redirect back to the frontend
-        res.redirect('https://www.gitforme.tech/');
-        // res.redirect('http://localhost:5173/');
+        // Generate JWT token for fallback authentication
+        const jwt = require('jsonwebtoken');
+        const token = jwt.sign(
+            { userId: user._id }, 
+            process.env.TOKEN_SECRET, 
+            { expiresIn: '24h' }
+        );
+
+        // Redirect to appropriate frontend with token
+        res.redirect(`${config.frontendUrl}/?token=${token}&success=true`);
 
     } catch (error) {
         console.error('Error during GitHub authentication:', error.message);
-        res.redirect('https://www.gitforme.tech/ogin?error=auth_failed');
+        res.redirect(`${config.frontendUrl}/login?error=auth_failed`);
     }
 };
 
-// Modify verifyUser endpoint
 exports.verifyUser = async (req, res) => {
-  console.log('VerifyUser - Session:', req.session);
-  if (req.session?.userId) {
-    try {
-      const user = await User.findById(req.session.userId).select('-password -githubAccessToken');
-      if (user) {
-        console.log('User found:', user);
-        return res.json({ status: true, user });
-      }
-    } catch (error) {
-      console.error("Error in verifyUser:", error);
+    if (req.session?.userId) {
+        try {
+            const user = await User.findById(req.session.userId).select('-password -githubAccessToken');
+            if (user) {
+                return res.json({ status: true, user });
+            }
+        } catch (error) {
+            console.error("Error in verifyUser:", error);
+        }
     }
-  }
-  console.log('No valid session found');
-  return res.json({ status: false, message: "No active session." });
+    return res.json({ status: false, message: "No active session." });
 };
