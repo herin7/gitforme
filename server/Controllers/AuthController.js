@@ -1,7 +1,8 @@
 // server/Controllers/AuthController.js
+const config = require('../config/envconfig.js');
 const User = require('../models/UserModel');
 const axios = require('axios');
-const config = require('../config/envconfig');
+const jwt = require('jsonwebtoken'); 
 
 exports.githubCallback = async (req, res) => {
     const { code } = req.query;
@@ -45,20 +46,14 @@ exports.githubCallback = async (req, res) => {
         // Create session
         req.session.userId = user._id;
 
-        // Generate JWT token for fallback authentication
-        const jwt = require('jsonwebtoken');
-        const token = jwt.sign(
-            { userId: user._id }, 
-            process.env.TOKEN_SECRET, 
-            { expiresIn: '24h' }
-        );
-
         // Redirect to appropriate frontend with token
-        res.redirect(`${config.frontendUrl}/?token=${token}&success=true`);
+        res.redirect(config.frontendUrl);
 
     } catch (error) {
-        console.error('Error during GitHub authentication:', error.message);
-        res.redirect(`${config.frontendUrl}/login?error=auth_failed`);
+       console.error('Error during GitHub authentication:', error.message);
+        // Ensure config is available even in the catch block
+        const redirectUrl = config ? `${config.frontendUrl}/login?error=auth_failed` : '/login?error=auth_failed';
+        res.redirect(redirectUrl);
     }
 };
 
@@ -74,4 +69,26 @@ exports.verifyUser = async (req, res) => {
         }
     }
     return res.json({ status: false, message: "No active session." });
+};
+
+// Add token verification endpoint for fallback
+exports.verifyToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(401).json({ status: false, message: 'No token provided' });
+        }
+
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+        const user = await User.findById(decoded.userId).select('-password -githubAccessToken');
+        
+        if (!user) {
+            return res.status(401).json({ status: false, message: 'Invalid token' });
+        }
+
+        res.json({ status: true, user });
+    } catch (error) {
+        res.status(401).json({ status: false, message: 'Invalid token' });
+    }
 };
