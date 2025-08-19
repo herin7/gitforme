@@ -1,29 +1,51 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/UserModel');
 
-exports.requireAuth = (req, res, next) => {
+// This single middleware protects all your API routes
+exports.requireAuth = async (req, res, next) => {
+    console.log(`[AuthMiddleware] Checking auth for: ${req.method} ${req.path}`);
+
+    // 1. Primary Method: Check for a valid session cookie
     if (req.session?.userId) {
+        console.log(`[AuthMiddleware] ✅ Success: Authenticated via session for user ${req.session.userId}`);
+        // Attach user ID for downstream use and continue
+        req.userId = req.session.userId;
         return next();
-    } else {
-        return res.status(401).json({ message: "Unauthorized: You must be logged in to view this content." });
     }
-};
 
-exports.verifyToken = async (req, res, next) => {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.status(401).json({ status: false, message: 'Access denied. No token provided.' });
-  }
+    // 2. Fallback Method: Check for a JWT in the Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        console.log('[AuthMiddleware] 🟡 Info: No session found. Attempting token fallback.');
+        const token = authHeader.split(' ')[1];
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
+                
+                // Optional: Check if user still exists
+                const userExists = await User.findById(decoded.userId);
+                if (!userExists) {
+                    console.log(`[AuthMiddleware] ❌ Failure: User ${decoded.userId} from token not found.`);
+                    return res.status(401).json({ message: "User not found." });
+                }
 
-  try {
-    const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
-    if (!req.user) {
-        return res.status(401).json({ status: false, message: 'Invalid token.' });
+                console.log(`[AuthMiddleware] ✅ Success: Authenticated via token for user ${decoded.userId}`);
+                // Attach user ID for downstream use
+                req.userId = decoded.userId;
+                
+                // Re-establish the session for subsequent requests
+                req.session.userId = decoded.userId;
+                console.log(`[AuthMiddleware] 🔄 Info: Session re-established for user ${decoded.userId}`);
+
+                return next();
+            } catch (ex) {
+                console.error('[AuthMiddleware] ❌ Failure: Token verification error:', ex.message);
+                return res.status(401).json({ message: "Unauthorized: Invalid token." });
+            }
+        }
     }
-    next(); 
-  } catch (ex) {
-    console.error('Token verification error:', ex);
-    res.status(400).json({ status: false, message: 'Invalid token.' });
-  }
+
+    // 3. If both methods fail, deny access
+    console.log('[AuthMiddleware] ❌ Failure: No session or valid token found. Access denied.');
+    return res.status(401).json({ message: "Unauthorized: You must be logged in." });
 };
