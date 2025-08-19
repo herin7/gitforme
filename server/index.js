@@ -70,8 +70,8 @@ app.use(
             secure: config.secure, // <-- Using value from config
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24,
-            sameSite: config.sameSite, // <-- Using value from config
-            domain: config.cookieDomain, // <-- Using value from config
+            sameSite: 'lax',
+            domain: config.cookieDomain, 
         },
     })
 );
