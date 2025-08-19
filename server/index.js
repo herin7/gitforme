@@ -12,7 +12,7 @@ const statsRoute = require('./Routes/StatsRoute');
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./docs/swagger.json");
-const config = require("./config/envconfig"); 
+const config = require("./config/envconfig");
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -23,35 +23,35 @@ app.set('trust proxy', config.isProduction ? 1 : 0);
 redisClient.on('error', (err) => console.error('Redis Client Error:', err));
 redisClient.on('connect', () => console.log('✅ Connected to Redis'));
 const redisStore = new RedisStore({
-    client: redisClient,
-    prefix: config.redisPrefix 
+  client: redisClient,
+  prefix: config.redisPrefix
 });
 
 // CORS configuration
 const allowedOrigins = [
-    config.frontendUrl, 
-    'https://www.gitforme.tech',
-    'https://gitforme.tech',
-    'https://gitforme-jbsp.vercel.app',
-    'https://gitforme-bot.onrender.com',
-    'http://localhost:5173',
-    'http://localhost:3000',
+  config.frontendUrl,
+  'https://www.gitforme.tech',
+  'https://gitforme.tech',
+  'https://gitforme-jbsp.vercel.app',
+  'https://gitforme-bot.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
 ];
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin && !config.isProduction) {
-            return callback(null, true);
-        }
-        if (allowedOrigins.includes(origin) || !origin) {
-            callback(null, true);
-        } else {
-            callback(new Error(`CORS not allowed for origin: ${origin}`), false);
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Forwarded-Proto', 'x-application'],
-    exposedHeaders: ['Set-Cookie']
+  origin: function (origin, callback) {
+    if (!origin && !config.isProduction) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS not allowed for origin: ${origin}`), false);
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Forwarded-Proto', 'x-application'],
+  exposedHeaders: ['Set-Cookie']
 }));
 
 // Body Parsers
@@ -60,26 +60,26 @@ app.use(cookieParser());
 
 // Session Management
 app.use(
-    session({
-        store: redisStore,
-        secret: process.env.SESSION_SECRET,
-        resave: false,
-        saveUninitialized: false,
-        proxy: config.isProduction, // <-- Using value from config
-        cookie: {
-            secure: config.secure, // <-- Using value from config
-            httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24,
-            sameSite: 'lax',
-            domain: config.cookieDomain, 
-        },
-    })
+  session({
+    store: redisStore,
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    proxy: config.isProduction, // <-- Using value from config
+    cookie: {
+      secure: true,              // 🔑 Render uses HTTPS
+      httpOnly: true,
+      sameSite: "none",          // 🔑 Required for cross-site cookies
+      domain: ".gitforme.tech",  // 🔑 so both www & non-www work
+      maxAge: 1000 * 60 * 60 * 24
+    },
+  })
 );
 
 // --- Database Connection ---
 mongoose.connect(process.env.MONGO_URL, {})
-    .then(() => console.log("✅ MongoDB connected"))
-    .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // --- API Routes ---
 // app.use((req, res, next) => {
