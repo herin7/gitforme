@@ -22,13 +22,18 @@ redisClient.on('error', (err) => console.error('Redis Client Error:', err));
 redisClient.on('connect', () => console.log('Connected to Redis'));
 const redisStore = new RedisStore({ client: redisClient, prefix: "session:" });
 const allowedOrigins = [
-  'https://www.gitforme.tech',
+  process.env.PRODUCTION_FRONTEND_URL || 'https://www.gitforme.tech',
+  'https://gitforme.tech',
   'https://gitforme-jbsp.vercel.app',
   'https://gitforme-bot.onrender.com',
-  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:5173'] : [])
+  ...(process.env.NODE_ENV === 'development' ? [
+    process.env.DEVELOPMENT_FRONTEND_URL || 'http://localhost:5173',
+    'http://localhost:5173'
+  ] : [])
 ];
 app.use(cors({
   origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = `CORS policy: ${origin} not allowed`;
@@ -36,11 +41,19 @@ app.use(cors({
     }
     return callback(null, true);
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With', 
+    'Accept', 
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
   credentials: true,
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 }));
 
 // 2. Body Parsers
@@ -56,14 +69,14 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProduction, //disable in dev mode
+      secure: isProduction, // HTTPS only in production
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, 
-      //reduced the max age to session checking.
-      // maxAge: 1000, 
-      // sameSite: 'none', //disable in dev mode
-      sameSite: isProduction? 'none':'lax', //Use this in dev mode 
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      // Enhanced browser compatibility
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for production (cross-site), 'lax' for development
       domain: isProduction ? '.gitforme.tech' : undefined, // Allow cookies across subdomains in production
+      // Additional flags for browser compatibility
+      path: '/', // Ensure cookie is available across all paths
     },
   })
 );
