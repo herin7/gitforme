@@ -34,7 +34,7 @@ const redisStore = new RedisStore({
 const allowedOrigins = [
     config.frontendUrl,
     'https://gitforme.tech',
-    'https://gitforme-jbsp.vercel.app',
+    'https://www.gitforme.tech',
     'https://gitforme-bot.onrender.com',
     'http://localhost:5173',
     'http://localhost:3000',
