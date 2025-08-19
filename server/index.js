@@ -13,6 +13,7 @@ const statsRoute = require('./Routes/StatsRoute');
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./docs/swagger.json");
+
 const PORT = process.env.PORT || 3000;
 const app = express();
 
