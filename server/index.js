@@ -36,6 +36,7 @@ const allowedOrigins = [
     'https://gitforme.tech',
     'https://www.gitforme.tech',
     'https://gitforme-bot.onrender.com',
+    'https://gitforme-jbsp-3garvptlm-herinsonis-projects.vercel.app',
     'http://localhost:5173',
     'http://localhost:3000',
 ];
