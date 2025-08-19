@@ -95,15 +95,15 @@ mongoose.connect(process.env.MONGO_URL, {})
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB Connection Error:", err));
 
-// // Optional: Request logging middleware (remove in production if not needed)
-// if (process.env.NODE_ENV === 'development') {
-//   app.use((req, res, next) => {
-//     console.log('Incoming cookies:', req.cookies);
-//     console.log('Session ID:', req.sessionID);
-//     console.log('Session data:', req.session);
-//     next();
-//   });
-// }
+// Optional: Request logging middleware (remove in production if not needed)
+if (process.env.NODE_ENV === 'development') {
+  app.use((req, res, next) => {
+    console.log('Incoming cookies:', req.cookies);
+    console.log('Session ID:', req.sessionID);
+    console.log('Session data:', req.session);
+    next();
+  });
+}
 
 // API Routes
 app.use("/api/auth", authRoute);
