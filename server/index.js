@@ -82,7 +82,7 @@ app.use(
       secure: isProduction, // HTTPS only in production
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
-      sameSite: isProduction ? 'none', // Cross-site in prod, relaxed in dev
+      sameSite: 'none', // Cross-site in prod, relaxed in dev
       domain: isProduction ? '.gitforme.tech' : undefined, // Subdomain support in production
       path: '/', // Ensure cookie availability across all paths
     },
