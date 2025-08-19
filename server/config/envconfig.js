@@ -8,7 +8,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const config = {
   isProduction,
   frontendUrl: isProduction 
-    ? process.env.FRONTEND_URL || 'https://www.gitforme.tech'
+    ? process.env.FRONTEND_URL || 'https://gitforme.tech'
     : process.env.FRONTEND_URL || 'http://localhost:5173',
   backendUrl: isProduction
     ? process.env.BACKEND_URL || 'https://gitforme.onrender.com'
