@@ -13,8 +13,8 @@ const config = {
   backendUrl: isProduction
     ? process.env.BACKEND_URL || 'https://gitforme.onrender.com'
     : process.env.BACKEND_URL || 'http://localhost:3000',
-  cookieDomain: isProduction ? '.gitforme.tech' : undefined,
-  sameSite: 'lax',
+//   cookieDomain: isProduction ? '.gitforme.tech' : undefined,
+  sameSite: 'none',
   secure: isProduction,
   redisPrefix: isProduction ? 'prod:' : 'dev:'
 };

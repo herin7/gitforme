@@ -70,7 +70,6 @@ app.use(
       secure: true,              // 🔑 Render uses HTTPS
       httpOnly: true,
       sameSite: "none",          // 🔑 Required for cross-site cookies
-      domain: ".gitforme.tech",  // 🔑 so both www & non-www work
       maxAge: 1000 * 60 * 60 * 24
     },
   })
