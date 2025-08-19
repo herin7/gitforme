@@ -16,7 +16,7 @@ exports.fetchReadme = async (req, res) => {
   // Strip .git from end if present
   if (reponame.endsWith('.git')) {
     reponame = reponame.slice(0, -4);
-  reponame = stripGitSuffix(reponame);
+  }
 
   try {
     const githubApi = await createGithubApi(req.session);
@@ -110,4 +110,3 @@ exports.fetchUserReposController = async (req, res) => {
     });
   }
 };
-}

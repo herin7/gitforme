@@ -25,8 +25,7 @@ const allowedOrigins = [
   'https://www.gitforme.tech',
   'https://gitforme-jbsp.vercel.app',
   'https://gitforme-bot.onrender.com',
-  // 'http://localhost:5173',
-  // 'http://localhost:5173/',
+  ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:5173'] : [])
 ];
 app.use(cors({
   origin: function (origin, callback) {
@@ -64,6 +63,7 @@ app.use(
       // maxAge: 1000, 
       // sameSite: 'none', //disable in dev mode
       sameSite: isProduction? 'none':'lax', //Use this in dev mode 
+      domain: isProduction ? '.gitforme.tech' : undefined, // Allow cookies across subdomains in production
     },
   })
 );
@@ -74,13 +74,6 @@ mongoose.connect(process.env.MONGO_URL, {})
   .catch((err) => console.error("MongoDB Connection Error:", err));
 
 // --- API Routes ---
-app.use((req, res, next) => {
-  console.log('Incoming cookies:', req.cookies);
-  console.log('Session ID:', req.sessionID);
-  console.log('Session data:', req.session);
-  next();
-});
-
 app.use("/api/auth", authRoute);
 //Status route added
 app.use("/api/stats", statsRoute);
