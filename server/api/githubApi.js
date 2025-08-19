@@ -1,15 +1,22 @@
 const axios = require('axios');
+const redis = require('redis');
 const redisClient = require('../util/RediaClient');
 const User = require('../models/UserModel');
+
+const githubApi = axios.create({
+  baseURL: 'https://api.github.com',
+  headers: {
+    'Accept': 'application/vnd.github.v3+json',
+  },
+});
 
 exports.fetchReadme = async (req, res) => {
   const { username } = req.params;
   let { reponame } = req.params;
-
   // Strip .git from end if present
   if (reponame.endsWith('.git')) {
     reponame = reponame.slice(0, -4);
-  }
+  reponame = stripGitSuffix(reponame);
 
   try {
     const githubApi = await createGithubApi(req.session);
@@ -24,12 +31,10 @@ exports.fetchReadme = async (req, res) => {
 exports.fetchRepoDetails = async (req, res) => {
   const { username } = req.params;
   let { reponame } = req.params;
-
   // Strip .git from end if present
   if (reponame.endsWith('.git')) {
     reponame = reponame.slice(0, -4);
   }
-
   const cacheKey = `repo:${username}:${reponame}`;
 
   try {
@@ -49,7 +54,7 @@ exports.fetchRepoDetails = async (req, res) => {
 
 const createGithubApi = async (session) => {
   const headers = { 'Accept': 'application/vnd.github.v3+json' };
-
+  
   if (session?.userId) {
     const user = await User.findById(session.userId);
     if (user?.githubAccessToken) {
@@ -81,21 +86,23 @@ exports.fetchUserReposController = async (req, res) => {
       return res.status(403).json({ message: "GitHub account not linked or access token missing." });
     }
 
-    const response = await axios.get(
-      'https://api.github.com/user/repos?sort=updated&per_page=100',
-      {
-        headers: {
-          Authorization: `token ${user.githubAccessToken}`,
-          Accept: 'application/vnd.github.v3+json',
-        },
-      }
-    );
+    const userToken = user.githubAccessToken;
+
+    const response = await axios.get('https://api.github.com/user/repos?sort=updated&per_page=100', {
+      headers: {
+        Authorization: `token ${userToken}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
 
     const userRepos = response.data;
 
-    await redisClient.set(cacheKey, JSON.stringify(userRepos), { EX: 3600 });
+    await redisClient.set(cacheKey, JSON.stringify(userRepos), {
+      EX: 3600,
+    });
 
     res.json(userRepos);
+
   } catch (error) {
     console.error("Error fetching user repositories:", error.response?.data || error.message);
     res.status(error.response?.status || 500).json({
@@ -103,3 +110,4 @@ exports.fetchUserReposController = async (req, res) => {
     });
   }
 };
+}
