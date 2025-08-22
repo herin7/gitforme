@@ -13,6 +13,7 @@
         const [isLoading, setIsLoading] = useState(true);
 
         useEffect(() => {
+            let didRun = false;
             const verifyUser = async () => {
                 try {
                     const apiServerUrl = import.meta.env.VITE_API_URL;
@@ -32,11 +33,21 @@
                 } catch (error) {
                     setUser(null);
                     setIsAuthenticated(false);
+                    // Fallback: force reload if session fails
+                    if (!didRun && window.location.pathname !== '/login') {
+                        didRun = true;
+                        setTimeout(() => window.location.reload(), 1000);
+                    }
                 } finally {
                     setIsLoading(false);
                 }
             };
+            // Always verify on mount
             verifyUser();
+            // If redirected from GitHub OAuth, verify again
+            if (window.location.pathname === '/auth/github/callback' || window.location.search.includes('code=')) {
+                setTimeout(verifyUser, 500);
+            }
             // Cross-tab/session sync for login/logout
             const handleStorage = (e) => {
                 if (e.key !== 'gitforme_auth_state') {
@@ -45,7 +56,13 @@
                 verifyUser();
             };
             window.addEventListener('storage', handleStorage);
-            return () => window.removeEventListener('storage', handleStorage);
+            // Also verify on focus (tab switch)
+            const handleFocus = () => verifyUser();
+            window.addEventListener('focus', handleFocus);
+            return () => {
+                window.removeEventListener('storage', handleStorage);
+                window.removeEventListener('focus', handleFocus);
+            };
         }, []);
 
         const login = (userData) => {
