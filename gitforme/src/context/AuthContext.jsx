@@ -12,7 +12,7 @@ export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    // ✅ Add token fallback function
+    // Add token fallback function
     const verifyWithTokenFallback = async () => {
         const apiServerUrl = import.meta.env.VITE_API_URL;
         
@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
         } catch (sessionError) {
             console.log('Session auth failed, trying token fallback...');
             
-            // ✅ Fallback to token-based authentication
+            // Fallback to token-based authentication
             const token = localStorage.getItem('auth_token');
             if (token) {
                 try {
@@ -49,24 +49,53 @@ export const AuthProvider = ({ children }) => {
                         setIsAuthenticated(true);
                         return true;
                     }
-                } catch (tokenError) {
-                    console.log('Token auth also failed');
+                } catch (error) {
+                    setUser(null);
+                    setIsAuthenticated(false);
+                    // Fallback: force reload if session fails
+                    if (!didRun && window.location.pathname !== '/login') {
+                        didRun = true;
+                        navigate('/login');
+                    }
+                } finally {
+                    setIsLoading(false);
                 }
+            };
+            // Always verify on mount
+            verifyUser();
+            // If redirected from GitHub OAuth, verify again
+            if (window.location.pathname === '/auth/github/callback' || window.location.search.includes('code=')) {
+                setTimeout(verifyUser, OAUTH_CALLBACK_VERIFY_DELAY_MS);
             }
-        }
-        
-        // Both methods failed
-        setUser(null);
-        setIsAuthenticated(false);
-        return false;
-    };
+            // Cross-tab/session sync for login/logout
+            const handleStorage = (e) => {
+                if (e.key !== 'gitforme_auth_state') {
+                    return;
+                }
+                verifyUser();
+            };
+            window.addEventListener('storage', handleStorage);
+            // Also verify on focus (tab switch)
+            const handleFocus = () => verifyUser();
+            window.addEventListener('focus', handleFocus);
+            return () => {
+                window.removeEventListener('storage', handleStorage);
+                window.removeEventListener('focus', handleFocus);
+            };
+        }, []);
+
+        const login = (userData) => {
+            setUser(userData);
+            setIsAuthenticated(true);
+            localStorage.setItem('gitforme_auth_state', Date.now().toString());
+        };
 
     useEffect(() => {
         const verifyUser = async () => {
             try {
                 await verifyWithTokenFallback();
                 
-                // ✅ Check URL for token (from OAuth redirect)
+                // Check URL for token (from OAuth redirect)
                 const urlParams = new URLSearchParams(window.location.search);
                 const token = urlParams.get('token');
                 const success = urlParams.get('success');
@@ -109,7 +138,7 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
         
-        // ✅ Store token for fallback if provided
+        // Store token for fallback if provided
         if (token) {
             localStorage.setItem('auth_token', token);
         }
@@ -128,7 +157,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.log('Logout API call failed, continuing with local cleanup');
         } finally {
-            // ✅ Clear both session and token storage
+            // Clear both session and token storage
             setUser(null);
             setIsAuthenticated(false);
             localStorage.removeItem('auth_token');
@@ -142,7 +171,7 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         login,
         logout,
-        // ✅ Add function to refresh authentication
+        // Add function to refresh authentication
         refreshAuth: async () => {
             setIsLoading(true);
             await verifyWithTokenFallback();

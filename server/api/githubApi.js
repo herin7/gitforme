@@ -2,13 +2,25 @@ const axios = require('axios');
 const redisClient = require('../util/RediaClient');
 const User = require('../models/UserModel');
 
+const githubApi = axios.create({
+  baseURL: 'https://api.github.com',
+  headers: {
+    'Accept': 'application/vnd.github.v3+json',
+  },
+});
+
+// Utility to robustly strip .git from repo names
+function stripGitSuffix(name) {
+  if (typeof name === 'string' && name.toLowerCase().endsWith('.git')) {
+    return name.slice(0, -4);
+  }
+  return name;
+}
+
 exports.fetchReadme = async (req, res) => {
   const { username } = req.params;
   let { reponame } = req.params;
-
-  if (reponame.endsWith('.git')) {
-    reponame = reponame.slice(0, -4);
-  }
+  reponame = stripGitSuffix(reponame);
 
   try {
     const githubApi = await createGithubApi(req.session);
