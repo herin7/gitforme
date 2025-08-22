@@ -10,12 +10,17 @@ const githubApi = axios.create({
   },
 });
 
+// Utility to robustly strip .git from repo names
+function stripGitSuffix(name) {
+  if (typeof name === 'string' && name.toLowerCase().endsWith('.git')) {
+    return name.slice(0, -4);
+  }
+  return name;
+}
+
 exports.fetchReadme = async (req, res) => {
   const { username } = req.params;
   let { reponame } = req.params;
-  // Strip .git from end if present
-  if (reponame.endsWith('.git')) {
-    reponame = reponame.slice(0, -4);
   reponame = stripGitSuffix(reponame);
 
   try {
@@ -31,10 +36,7 @@ exports.fetchReadme = async (req, res) => {
 exports.fetchRepoDetails = async (req, res) => {
   const { username } = req.params;
   let { reponame } = req.params;
-  // Strip .git from end if present
-  if (reponame.endsWith('.git')) {
-    reponame = reponame.slice(0, -4);
-  }
+  reponame = stripGitSuffix(reponame);
   const cacheKey = `repo:${username}:${reponame}`;
 
   try {
