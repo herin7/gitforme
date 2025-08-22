@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
                     // Fallback: force reload if session fails
                     if (!didRun && window.location.pathname !== '/login') {
                         didRun = true;
-                        setTimeout(() => window.location.reload(), 1000);
+                        navigate('/login');
                     }
                 } finally {
                     setIsLoading(false);
