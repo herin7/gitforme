@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
                 window.removeEventListener('storage', handleStorage);
                 window.removeEventListener('focus', handleFocus);
             };
-        }, []);
+        };
 
         const login = (userData) => {
             setUser(userData);
