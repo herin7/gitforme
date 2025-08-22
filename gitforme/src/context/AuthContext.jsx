@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
             verifyUser();
             // If redirected from GitHub OAuth, verify again
             if (window.location.pathname === '/auth/github/callback' || window.location.search.includes('code=')) {
-                setTimeout(verifyUser, 500);
+                setTimeout(verifyUser, OAUTH_CALLBACK_VERIFY_DELAY_MS);
             }
             // Cross-tab/session sync for login/logout
             const handleStorage = (e) => {
