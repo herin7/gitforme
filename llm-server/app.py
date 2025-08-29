@@ -45,6 +45,7 @@ logging.getLogger().setLevel(logging.INFO)
 app = Flask(__name__)
 allowed_origins = [
     "http://localhost:3000", 
+    "http://localhost:3001", 
     "http://localhost:5173", 
     "https://gitforme.tech"
 ]
@@ -201,7 +202,9 @@ async def get_relevant_context(repo_url, query):
     logging.info(f"Total time for get_relevant_context: {time.time() - total_start_time:.2f}s.")
     return context, None
 
-def stream_llm_response(context, query, repo_url):
+def stream_llm_response(context, query, repo_url,
+                        azure_endpoint=None, api_key=None, deployment=None, api_version="2023-05-15"):
+
     llm_call_start_time = time.time()
     logging.info("Initiating LLM call to Azure OpenAI.")
     system_prompt = f"""# ROLE & GOAL
@@ -227,10 +230,14 @@ You are embedded within the GitForme application. When a user's query relates to
 - **FORMATTING**"""
     try:
         client = AzureOpenAI(
-            api_key=os.getenv("AZURE_OPENAI_KEY"),
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+        api_key=api_key or os.getenv("AZURE_OPENAI_KEY"),
+        azure_endpoint=azure_endpoint or os.getenv("AZURE_OPENAI_ENDPOINT"),
+        api_version=api_version or os.getenv("AZURE_OPENAI_API_VERSION")
         )
+
+        deployment_name = deployment or os.getenv("AZURE_OPENAI_DEPLOYMENT")
+        
+        
         user_content = f"""Here is the context retrieved from the repository files based on my question:
 ---
 {context}
@@ -238,7 +245,7 @@ You are embedded within the GitForme application. When a user's query relates to
 My Question: "{query}"
 Please provide your analysis based on these rules and context."""
         response = client.chat.completions.create(
-            model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+            model=deployment_name,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content}
@@ -275,6 +282,11 @@ async def chat():
     data = request.get_json()
     query = data.get("query")
     repo_id = data.get("repoId")
+    # user provided cred
+    azure_endpoint = data.get("azureEndpoint")
+    api_key = data.get("apiKey")
+    deployment = data.get("deployment")
+    api_version = data.get("apiVersion", "2023-05-15")
     if not query or not repo_id:
         logging.error("Missing query or repoId in request.")
         return jsonify({"error": "Missing query or repoId"}), 400
@@ -290,7 +302,17 @@ async def chat():
         logging.error(f"Error getting context for '{repo_id}': {error}")
         return jsonify({"error": error}), 500
     logging.info(f"Context retrieved successfully. Total request processing time before streaming: {time.time() - request_start_time:.2f}s.")
-    return Response(stream_llm_response(context, query, repo_url), mimetype='text/event-stream')
+    return Response(
+    stream_llm_response(
+        context, query, repo_url,
+        azure_endpoint=azure_endpoint,
+        api_key=api_key,
+        deployment=deployment,
+        api_version=api_version
+    ),
+    mimetype='text/event-stream'
+)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5001))

@@ -12,7 +12,7 @@ const insightsRoutes = require('./Routes/InsightRoutes');
 //added the route here
 const statsRoute = require('./Routes/StatsRoute');
 const { requireAuth } = require("./Middlewares/AuthMiddleware");
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 const app = express();
 app.set('trust proxy', 1); 
 redisClient.on('error', (err) => console.error('Redis Client Error:', err));
@@ -22,8 +22,8 @@ const allowedOrigins = [
   'https://www.gitforme.tech',
   'https://gitforme-jbsp.vercel.app',
   'https://gitforme-bot.onrender.com',
-  // 'http://localhost:5173',
-  // 'http://localhost:5173/',
+  'http://localhost:5173',
+  'http://localhost:5173/',
 ];
 app.use(cors({
   origin: function (origin, callback) {
