@@ -3,5 +3,8 @@ server\node_modules
 pnpm-lock.yaml
 node_modules
 .env
-llm-server/.venv
+llm-server/.venv3
+venv3/
+llm-server\venv3
+
 docker-compose.yml

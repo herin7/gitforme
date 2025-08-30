@@ -13,8 +13,8 @@ const { requireAuth } = require("./Middlewares/AuthMiddleware");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./docs/swagger.json");
 const config = require("./config/envconfig");
-
 const PORT = process.env.PORT || 3000;
+
 const app = express();
 
 app.set('trust proxy', config.isProduction ? 1 : 0);
@@ -33,8 +33,11 @@ const allowedOrigins = [
   'https://www.gitforme.tech',
   'https://gitforme.tech',
   'https://gitforme-jbsp.vercel.app',
-  'https://gitforme-bot.onrender.com'
+  'https://gitforme-bot.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:5173/',
 ];
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin && !config.isProduction) {
