@@ -108,7 +108,7 @@ const LandingPageContent = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 2L15 8h6l-4.9 3.6L18 18l-6-4.4L6 18l1.9-6.4L3 8h6z" />
                     </svg>
-                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have {renderUserCount()} users now!</span>
+                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have 8000+ users now!</span>
                 </div>
             </motion.div>
              <motion.div
