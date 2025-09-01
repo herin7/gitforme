@@ -81,10 +81,8 @@ const GitformeUi = () => {
     let canonicalRepo = reponame ? stripGitSuffix(reponame) : 'gitforme';
     if (canonicalUsername && canonicalRepo) {
       setRepoUrl(`https://github.com/${canonicalUsername}/${canonicalRepo}`);
-      console.log('Repo URL set to:', `https://github.com/${canonicalUsername}/${canonicalRepo}`);
     } else {
       setRepoUrl('https://github.com/herin7/gitforme');
-      console.log('Repo URL set to default:', 'https://github.com/herin7/gitforme');
     }
   }, [username, reponame]);
 
