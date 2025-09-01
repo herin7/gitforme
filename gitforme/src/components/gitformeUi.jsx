@@ -58,6 +58,14 @@ const GitformeUi = () => {
   const navigate = useNavigate();
   const { username, reponame } = useParams();
 
+  // Utility to robustly strip .git from any part of repo URL
+  const stripGitSuffix = (name) => {
+    if (typeof name === 'string') {
+      return name.replace(/\.git$/i, '');
+    }
+    return name;
+  };
+
   const [repoUrl, setRepoUrl] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isBraveBrowser, setIsBraveBrowser] = useState(false);
@@ -67,9 +75,16 @@ const GitformeUi = () => {
   const UNAUTHENTICATED_USAGE_LIMIT = 2;
   const apiServerUrl = import.meta.env.VITE_API_URL;
 
+  // Auto-load repo and show correct URL in search bar
   useEffect(() => {
-    if (username && reponame) {
-      setRepoUrl(`https://github.com/${username}/${reponame}`);
+    let canonicalUsername = username ? stripGitSuffix(username) : 'herin7';
+    let canonicalRepo = reponame ? stripGitSuffix(reponame) : 'gitforme';
+    if (canonicalUsername && canonicalRepo) {
+      setRepoUrl(`https://github.com/${canonicalUsername}/${canonicalRepo}`);
+      console.log('Repo URL set to:', `https://github.com/${canonicalUsername}/${canonicalRepo}`);
+    } else {
+      setRepoUrl('https://github.com/herin7/gitforme');
+      console.log('Repo URL set to default:', 'https://github.com/herin7/gitforme');
     }
   }, [username, reponame]);
 
@@ -93,51 +108,49 @@ const GitformeUi = () => {
   }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
+  const handleCookRepoUrl = () => {
+    if (!repoUrl) {
+      alert('Please enter a GitHub repository URL.');
+      return;
+    }
+    try {
+      const url = new URL(repoUrl);
+      const pathParts = url.pathname.split('/').filter(part => part);
+
+      if (pathParts.length < 2) {
+        alert('Invalid GitHub repository URL format. Example: https://github.com/owner/repo');
+        return;
+      }
+
+      // Strip .git from both username and repo name if present
+      const cleanUsername = stripGitSuffix(pathParts[0]);
+      const cleanRepoName = stripGitSuffix(pathParts[1]);
+      const repoIdentifier = `${cleanUsername}/${cleanRepoName}`;
+
+      // Check usage limit only if the user is not authenticated
+      if (!isAuthenticated) {
+        const viewedRepos = JSON.parse(localStorage.getItem('viewedRepos') || '[]');
+        // If repo is new and limit is reached, show prompt
+        if (!viewedRepos.includes(repoIdentifier) && viewedRepos.length >= UNAUTHENTICATED_USAGE_LIMIT) {
+          setShowLoginPrompt(true);
+          return;
+        }
+
+        // If repo is new and limit is not reached, add it to tracking
+        if (!viewedRepos.includes(repoIdentifier)) {
+          viewedRepos.push(repoIdentifier);
+          localStorage.setItem('viewedRepos', JSON.stringify(viewedRepos));
+        }
+      }
+
+      // Proceed to the repo page (always without .git)
+      navigate(`/${cleanUsername}/${cleanRepoName}`);
+    } catch (e) {
+      alert('Invalid URL format. Please enter a valid URL.');
+    }
   };
 
-  // 3. Updated function to handle usage limits
-    const handleCookRepoUrl = () => {
-        if (!repoUrl) {
-            alert('Please enter a GitHub repository URL.');
-            return;
-        }
-        try {
-            const url = new URL(repoUrl);
-            const pathParts = url.pathname.split('/').filter(part => part);
-
-            if (pathParts.length < 2) {
-                alert('Invalid GitHub repository URL format. Example: https://github.com/owner/repo');
-                return;
-            }
-
-            const repoIdentifier = `${pathParts[0]}/${pathParts[1]}`;
-
-            // Check usage limit only if the user is not authenticated
-            if (!isAuthenticated) {
-                const viewedRepos = JSON.parse(localStorage.getItem('viewedRepos') || '[]');
-                
-                // If repo is new and limit is reached, show prompt
-                if (!viewedRepos.includes(repoIdentifier) && viewedRepos.length >= UNAUTHENTICATED_USAGE_LIMIT) {
-                    setShowLoginPrompt(true);
-                    return;
-                }
-
-                // If repo is new and limit is not reached, add it to tracking
-                if (!viewedRepos.includes(repoIdentifier)) {
-                    viewedRepos.push(repoIdentifier);
-                    localStorage.setItem('viewedRepos', JSON.stringify(viewedRepos));
-                }
-            }
-
-            // Proceed to the repo page
-            navigate(`/${pathParts[0]}/${pathParts[1]}`);
-        } catch (e) {
-            alert('Invalid URL format. Please enter a valid URL.');
-        }
-    };
+// ...existing code...
       const handleApiError = () => {
         if (!isAuthenticated) {
             setShowLoginPrompt(true);
