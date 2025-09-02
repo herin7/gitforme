@@ -23,6 +23,17 @@ class GitformeSidebarProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri]
     };
     webviewView.webview.html = this.getHtmlForWebview();
+
+    // Listen for messages from the webview
+    webviewView.webview.onDidReceiveMessage(async (message) => {
+      if (message.command === 'fetchInsights') {
+        const repoUrl = message.repoUrl;
+        // Dynamically import to avoid circular dependency
+        const { fetchRepoInsights } = await import('./api');
+        const result = await fetchRepoInsights(repoUrl);
+        webviewView.webview.postMessage({ command: 'showResult', result });
+      }
+    });
   }
 
   getHtmlForWebview(): string {
@@ -34,10 +45,17 @@ class GitformeSidebarProvider implements vscode.WebviewViewProvider {
         <button id="fetchBtn" style="padding: 0.5em 1em;">Fetch</button>
         <div id="result" style="margin-top: 1em;"></div>
         <script>
+          const vscode = acquireVsCodeApi();
           document.getElementById('fetchBtn').addEventListener('click', function() {
             var repoUrl = document.getElementById('repoUrl').value;
             document.getElementById('result').innerText = 'Fetching insights for: ' + repoUrl;
-            // TODO: Send message to extension backend to actually fetch insights
+            vscode.postMessage({ command: 'fetchInsights', repoUrl });
+          });
+          window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'showResult') {
+              document.getElementById('result').innerText = message.result;
+            }
           });
         </script>
       </div>
