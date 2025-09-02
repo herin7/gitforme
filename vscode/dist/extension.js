@@ -51,8 +51,9 @@ class GitformeSidebarProvider {
             enableScripts: true,
             localResourceRoots: [this._extensionUri]
         };
-        webviewView.webview.html = this.getHtmlForWebview();
-
+        const sidebarScriptUri = vscode.Uri.joinPath(this._extensionUri, 'media', 'sidebar.js');
+        const resolvedSidebarScriptUri = webviewView.webview.asWebviewUri(sidebarScriptUri);
+        webviewView.webview.html = this.getHtmlForWebview(resolvedSidebarScriptUri);
         // Listen for messages from the webview
         webviewView.webview.onDidReceiveMessage(async (message) => {
             if (message.command === 'fetchInsights') {
@@ -64,29 +65,19 @@ class GitformeSidebarProvider {
             }
         });
     }
-    getHtmlForWebview() {
-        return `
-      <div style="font-family: sans-serif; padding: 1rem;">
-        <h2>GitForMe Insights</h2>
-        <p>Welcome to the GitForMe VSCode extension sidebar!</p>
-        <input id="repoUrl" type="text" placeholder="Paste GitHub repo URL here" style="width: 80%; padding: 0.5em; margin-bottom: 0.5em;" />
-        <button id="fetchBtn" style="padding: 0.5em 1em;">Fetch</button>
-        <div id="result" style="margin-top: 1em;"></div>
-        <script>
-          const vscode = acquireVsCodeApi();
-          document.getElementById('fetchBtn').addEventListener('click', function() {
-            var repoUrl = document.getElementById('repoUrl').value;
-            document.getElementById('result').innerText = 'Fetching insights for: ' + repoUrl;
-            vscode.postMessage({ command: 'fetchInsights', repoUrl });
-          });
-          window.addEventListener('message', event => {
-            const message = event.data;
-            if (message.command === 'showResult') {
-              document.getElementById('result').innerText = message.result;
-            }
-          });
-        </script>
-      </div>
-    `;
+    getHtmlForWebview(resolvedSidebarScriptUri) {
+        const mermaidScriptUri = 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js';
+        return [
+            `<div style="font-family: sans-serif; padding: 1rem;">`,
+            `<h2>GitForMe Insights</h2>`,
+            `<p>Welcome to the GitForMe VSCode extension sidebar!</p>`,
+            `<input id="repoUrl" type="text" placeholder="Paste GitHub repo URL here" style="width: 80%; padding: 0.5em; margin-bottom: 0.5em;" />`,
+            `<button id="fetchBtn" style="padding: 0.5em 1em;">Fetch</button>`,
+            `<div id="result" style="margin-top: 1em;"></div>`,
+            `<div id="mermaid" style="margin-top: 2em;"></div>`,
+            `<script src="${mermaidScriptUri}"></script>`,
+            `<script src="${resolvedSidebarScriptUri}"></script>`,
+            `</div>`
+        ].join('\n');
     }
 }

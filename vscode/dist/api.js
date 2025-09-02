@@ -27,20 +27,23 @@ async function fetchRepoInsights(repoUrl) {
             throw new Error(`Failed to fetch branches: ${branchesRes.status} ${branchesRes.statusText}`);
         }
         const branches = await branchesRes.json();
-        let result = `Branches found: ${branches.map((b) => b.name).join(', ')}\n`;
-        // For each branch, fetch tree
+        // Build Mermaid flowchart syntax
+        let mermaid = 'flowchart TD\n';
+        mermaid += `repo[${repo}]\n`;
         for (const branch of branches) {
+            mermaid += `repo --> ${branch.name}\n`;
             const treeRes = await (0, node_fetch_1.default)(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch.name}?recursive=1`);
             if (!treeRes.ok) {
-                result += `Branch ${branch.name}: Failed to fetch tree.\n`;
+                mermaid += `${branch.name}:::error\n`;
                 continue;
             }
             const treeData = await treeRes.json();
-            // List folders
             const folders = Array.from(new Set(treeData.tree.filter((item) => item.type === 'tree').map((item) => item.path.split('/')[0])));
-            result += `Branch ${branch.name}: Folders: ${folders.join(', ')}\n`;
+            for (const folder of folders) {
+                mermaid += `${branch.name} --> ${branch.name}_${folder}[${folder}]\n`;
+            }
         }
-        return result;
+        return mermaid;
     }
     catch (err) {
         if (err instanceof Error) {
