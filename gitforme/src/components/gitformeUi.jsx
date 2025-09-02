@@ -106,6 +106,11 @@ const GitformeUi = () => {
   }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+  
   const handleCookRepoUrl = () => {
     if (!repoUrl) {
       alert('Please enter a GitHub repository URL.');
