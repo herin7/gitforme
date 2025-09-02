@@ -1,3 +1,5 @@
+import fetch from 'node-fetch';
+
 export async function fetchRepoInsights(repoUrl: string): Promise<string> {
   // Replace with your actual backend endpoint
   const apiEndpoint = 'https://www.gitforme.tech/api/github/insights';
