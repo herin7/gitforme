@@ -52,6 +52,7 @@ class GitformeSidebarProvider {
             localResourceRoots: [this._extensionUri]
         };
         webviewView.webview.html = this.getHtmlForWebview();
+
         // Listen for messages from the webview
         webviewView.webview.onDidReceiveMessage(async (message) => {
             if (message.command === 'fetchInsights') {

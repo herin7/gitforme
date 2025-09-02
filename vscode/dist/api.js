@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchRepoInsights = fetchRepoInsights;
 const node_fetch_1 = __importDefault(require("node-fetch"));
+
 // Helper to extract owner/repo from GitHub URL
 function parseRepoUrl(repoUrl) {
     const match = repoUrl.match(/github.com\/(.+?)\/(.+?)(?:$|\/|\?)/);
