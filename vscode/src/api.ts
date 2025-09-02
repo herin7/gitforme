@@ -8,7 +8,7 @@ export async function fetchRepoInsights(repoUrl: string): Promise<string> {
       body: JSON.stringify({ repoUrl })
     });
     if (!response.ok) {
-      throw new Error('Failed to fetch insights');
+      throw new Error(`Failed to fetch insights: ${response.status} ${response.statusText}`);
     }
     const data = await response.json();
     // You can format the data here as needed
