@@ -13,7 +13,10 @@ export async function fetchRepoInsights(repoUrl: string): Promise<string> {
     const data = await response.json();
     // You can format the data here as needed
     return JSON.stringify(data, null, 2);
-  } catch (err: any) {
-    return `Error: ${err.message}`;
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return `Error: ${err.message}`;
+    }
+    return 'An unknown error occurred';
   }
 }
