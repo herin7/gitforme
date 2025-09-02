@@ -30,7 +30,16 @@ class GitformeSidebarProvider implements vscode.WebviewViewProvider {
       <div style="font-family: sans-serif; padding: 1rem;">
         <h2>GitForMe Insights</h2>
         <p>Welcome to the GitForMe VSCode extension sidebar!</p>
-        <p>Paste a GitHub repo URL and click Fetch (feature coming soon).</p>
+        <input id="repoUrl" type="text" placeholder="Paste GitHub repo URL here" style="width: 80%; padding: 0.5em; margin-bottom: 0.5em;" />
+        <button id="fetchBtn" style="padding: 0.5em 1em;">Fetch</button>
+        <div id="result" style="margin-top: 1em;"></div>
+        <script>
+          document.getElementById('fetchBtn').addEventListener('click', function() {
+            var repoUrl = document.getElementById('repoUrl').value;
+            document.getElementById('result').innerText = 'Fetching insights for: ' + repoUrl;
+            // TODO: Send message to extension backend to actually fetch insights
+          });
+        </script>
       </div>
     `;
   }
