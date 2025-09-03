@@ -203,9 +203,24 @@ const GitformeUi = () => {
       {/* Brave Browser Warning Message */}
       {isBraveBrowser && !isAuthenticated && (
         <div className="container mx-auto mt-2 -mb-4">
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-md text-center text-sm">
-                For a better experience, please avoid using the Brave browser for login due to potential compatibility issues.
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-md text-center text-sm flex flex-col items-center">
+            <div className="mb-2">
+              {/* Brave logo SVG */}
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="16" fill="#F36F21"/>
+                <text x="16" y="22" textAnchor="middle" fontSize="16" fill="#fff" fontFamily="sans-serif">🦁</text>
+              </svg>
             </div>
+            <span className="font-bold">Brave Browser Detected</span>
+            <span className="mt-1">Brave blocks third-party cookies by default, which breaks login.</span>
+            <span className="mt-1">To fix login issues:</span>
+            <ul className="list-disc list-inside text-left mt-1">
+              <li>Click the Brave logo in your browser’s address bar.</li>
+              <li>Allow third-party cookies for <span className="font-mono">gitforme.tech</span>.</li>
+              <li>Reload the page and try logging in again.</li>
+            </ul>
+            <span className="mt-2 text-xs text-gray-600">(This is needed because our backend and frontend are on different domains.)</span>
+          </div>
         </div>
       )}
  <AnimatePresence>
