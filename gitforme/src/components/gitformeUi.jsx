@@ -1,4 +1,4 @@
-bimport React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -201,13 +201,40 @@ const GitformeUi = () => {
       />
 
       {/* Brave Browser Warning Message */}
-      {isBraveBrowser && !isAuthenticated && (
-        <div className="container mx-auto mt-2 -mb-4">
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-md text-center text-sm">
-                For a better experience, please avoid using the Brave browser for login due to potential compatibility issues.
-            </div>
-        </div>
-      )}
+     {isBraveBrowser && !isAuthenticated && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="bg-white border-2 border-black rounded-xl shadow-[4px_4px_0px_rgba(0,0,0,1)] p-6 max-w-md text-center">
+      <h2 className="text-lg font-bold mb-2">⚠️ Browser Settings Required</h2>
+      <p className="text-sm text-gray-700 mb-4">
+        For GitHub login to work properly, please:
+        <br />• Allow cookies and third-party cookies
+        <br />• Disable ad blockers for this site
+        <br />• Enable JavaScript (if disabled)
+      </p>
+      <div className="flex gap-3 justify-center">
+        <button
+          onClick={() => setIsBraveBrowser(false)}
+          className="px-4 py-2 bg-[#F9C79A] border-2 border-black rounded-lg font-semibold hover:bg-amber-400 transition-colors shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5"
+        >
+          I've enabled them
+        </button>
+        <button
+          onClick={handleGitHubLogin}
+          className="px-4 py-2 bg-green-400 border-2 border-black rounded-lg font-semibold hover:bg-green-500 transition-colors shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5"
+        >
+          Try Login
+        </button>
+      </div>
+      <button
+        onClick={() => setIsBraveBrowser(false)}
+        className="mt-3 text-xs text-gray-500 hover:text-gray-700 underline"
+      >
+        Dismiss this message
+      </button>
+    </div>
+  </div>
+)}
+
  <AnimatePresence>
                 {showLoginPrompt && (
                     <LoginPromptModal 

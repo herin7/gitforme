@@ -99,30 +99,8 @@ const LandingPageContent = () => {
                 </motion.div>
             </AdBlockDetectedWrapper>
 
-            <motion.div
-                variants={itemVariants}
-                className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 rounded-md shadow-md animate-pulse"
-                role="status"
-            >
-                <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-yellow-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L15 8h6l-4.9 3.6L18 18l-6-4.4L6 18l1.9-6.4L3 8h6z" />
-                    </svg>
-                    <span className="font-semibold text-sm">🎉 Thanks for the overwhelming response — we have 8000+ users now!</span>
-                </div>
-            </motion.div>
-             <motion.div
-                variants={itemVariants}
-                className="max-w-4xl mx-auto mt-4 mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-800 rounded-md shadow-md"
-                role="status"
-            >
-                <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-3 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="font-semibold text-sm">We're back! The login issues have been resolved. Thanks for your patience.</span>
-                </div>
-            </motion.div>
+
+
             {/* --- Updated Service Paused Notification --- */}
   
          {/* <motion.div
