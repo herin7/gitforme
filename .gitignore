@@ -6,5 +6,5 @@ node_modules
 llm-server/.venv3
 venv3/
 llm-server\venv3
-
+.venv
 docker-compose.yml

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitForMe - VS Code Extension Token</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .logo {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .title {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .token-container {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+        
+        .token-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .token-value {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            color: #495057;
+            user-select: all;
+            cursor: text;
+        }
+        
+        .copy-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+            font-size: 1rem;
+        }
+        
+        .copy-button:hover {
+            background: #0056b3;
+        }
+        
+        .copy-button.copied {
+            background: #28a745;
+        }
+        
+        .instructions {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            text-align: left;
+        }
+        
+        .instructions h3 {
+            color: #004085;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .instructions ol {
+            color: #004085;
+            padding-left: 1.5rem;
+        }
+        
+        .instructions li {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+        
+        .success-icon {
+            color: #28a745;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🔍</div>
+        <h1 class="title">VS Code Extension Token</h1>
+        
+        <div id="success-content" style="display: none;">
+            <div class="success-icon">✅</div>
+            <p class="subtitle">Your authentication was successful! Copy the token below and paste it in VS Code.</p>
+            
+            <div class="token-container">
+                <div class="token-label">Your Authentication Token:</div>
+                <div class="token-value" id="token-display"></div>
+                <button class="copy-button" id="copy-button" onclick="copyToken()">
+                    📋 Copy Token
+                </button>
+            </div>
+            
+            <div class="instructions">
+                <h3>Next Steps:</h3>
+                <ol>
+                    <li>Click the "Copy Token" button above</li>
+                    <li>Go back to VS Code</li>
+                    <li>Paste the token when prompted</li>
+                    <li>Start analyzing repositories! 🚀</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div id="error-content" style="display: none;">
+            <div class="error-message">
+                <strong>Authentication Failed</strong><br>
+                No token was found in the URL. Please try logging in again.
+            </div>
+            <button class="copy-button" onclick="retryLogin()">
+                🔄 Try Again
+            </button>
+        </div>
+        
+        <div id="loading-content">
+            <div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+            <p class="subtitle">Processing authentication...</p>
+        </div>
+    </div>
+
+    <script>
+        function getTokenFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('token');
+        }
+        
+        function copyToken() {
+            const tokenElement = document.getElementById('token-display');
+            const copyButton = document.getElementById('copy-button');
+            
+            // Create a temporary textarea to copy the token
+            const textarea = document.createElement('textarea');
+            textarea.value = tokenElement.textContent;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            
+            // Update button to show success
+            copyButton.textContent = '✅ Copied!';
+            copyButton.classList.add('copied');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                copyButton.textContent = '📋 Copy Token';
+                copyButton.classList.remove('copied');
+            }, 2000);
+        }
+        
+        function retryLogin() {
+            window.location.href = '/api/auth/github';
+        }
+        
+        // Initialize the page
+        window.addEventListener('load', function() {
+            const token = getTokenFromUrl();
+            const success = new URLSearchParams(window.location.search).get('success');
+            
+            // Hide loading
+            document.getElementById('loading-content').style.display = 'none';
+            
+            if (token && success === 'true') {
+                // Show success content
+                document.getElementById('success-content').style.display = 'block';
+                document.getElementById('token-display').textContent = token;
+            } else {
+                // Show error content
+                document.getElementById('error-content').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

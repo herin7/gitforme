@@ -70,7 +70,18 @@ exports.githubCallback = async (req, res) => {
 
         // 6. Redirect to the frontend, passing the token in the URL
         console.log('[GitHub OAuth] Step 6: Redirecting user to frontend...');
-        res.redirect(`${config.frontendUrl}?success=true&token=${fallbackToken}`);
+        
+        // Check if this is a VS Code extension request
+        const userAgent = req.headers['user-agent'] || '';
+        const isVSCodeRequest = userAgent.includes('vscode') || req.query.source === 'vscode';
+        
+        if (isVSCodeRequest) {
+            // Redirect to special VS Code token page
+            res.redirect(`${config.frontendUrl}/vscode-token.html?success=true&token=${fallbackToken}`);
+        } else {
+            // Normal web app redirect
+            res.redirect(`${config.frontendUrl}?success=true&token=${fallbackToken}`);
+        }
 
     } catch (error) {
        console.error('Error during GitHub authentication:', error.message);
