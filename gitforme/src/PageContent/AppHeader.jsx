@@ -124,14 +124,15 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                         </div>
                                         <div className="flex flex-col items-center">
                                             <a
-                                                href="https://coff.ee/herinsoni3a"
+                                                href="https://pplx.ai/herinsoni"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 border-2 border-black rounded-lg hover:bg-yellow-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
-                                                title="Buy me a coffee"
+                                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-2 border-black rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+                                                title="Get Free Comet Browser Access - Limited Time!"
                                             >
-                                            <CoffeeIcon />
-                                            <span className="lg:inline">Support</span>
+                                                🚀
+                                                <span>FREE Comet Browser!</span>
+                                                <span className="bg-yellow-300 text-black text-xs px-2 py-1 rounded-full font-black">NEW</span>
                                             </a>
                                         </div>
                                     </div>
@@ -139,6 +140,18 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                 <div onClick={() => setOpen(false)} />
                             </div>
                         </div>
+<a
+    href="https://pplx.ai/herinsoni"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white border-2 border-black rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-300 font-bold shadow-[4px_4px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 animate-pulse"
+    title="Get Free Comet Browser Access - Limited Time!"
+>
+    🚀
+    <span className="hidden md:inline">FREE Comet Browser!</span>
+    <span className="md:hidden">FREE Comet!</span>
+    <span className="bg-yellow-300 text-black text-xs px-2 py-1 rounded-full font-black animate-bounce">NEW</span>
+</a>
 
                         {/* mobile version ends here*/}
                         <div className="hidden lg:flex-grow lg:flex gap-2">
