@@ -206,9 +206,13 @@ const GitformeUi = () => {
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-md text-center text-sm flex flex-col items-center">
             <div className="mb-2">
               {/* Brave logo SVG */}
+              {/* Brave logo SVG (vector path, not emoji) */}
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="16" cy="16" r="16" fill="#F36F21"/>
-                <text x="16" y="22" textAnchor="middle" fontSize="16" fill="#fff" fontFamily="sans-serif">🦁</text>
+                <g>
+                  <path d="M16 8.5c-2.5 0-4.5 2-4.5 4.5 0 2.2 1.6 4.1 3.7 4.4v2.1c0 .4.3.7.7.7s.7-.3.7-.7v-2.1c2.1-.3 3.7-2.2 3.7-4.4 0-2.5-2-4.5-4.5-4.5zm0 7.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" fill="#fff"/>
+                  <path d="M11.5 21c.3.6 1.1 1 2.1 1h4.8c1 0 1.8-.4 2.1-1l.7-1.3c.2-.3.1-.7-.2-.9-.3-.2-.7-.1-.9.2l-.7 1.3c-.1.2-.5.4-1 .4h-4.8c-.5 0-.9-.2-1-.4l-.7-1.3c-.2-.3-.6-.4-.9-.2-.3.2-.4.6-.2.9l.7 1.3z" fill="#fff"/>
+                </g>
               </svg>
             </div>
             <span className="font-bold">Brave Browser Detected</span>
