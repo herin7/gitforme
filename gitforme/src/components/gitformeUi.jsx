@@ -201,40 +201,32 @@ const GitformeUi = () => {
       />
 
       {/* Brave Browser Warning Message */}
-     {isBraveBrowser && !isAuthenticated && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-    <div className="bg-white border-2 border-black rounded-xl shadow-[4px_4px_0px_rgba(0,0,0,1)] p-6 max-w-md text-center">
-      <h2 className="text-lg font-bold mb-2">⚠️ Browser Settings Required</h2>
-      <p className="text-sm text-gray-700 mb-4">
-        For GitHub login to work properly, please:
-        <br />• Allow cookies and third-party cookies
-        <br />• Disable ad blockers for this site
-        <br />• Enable JavaScript (if disabled)
-      </p>
-      <div className="flex gap-3 justify-center">
-        <button
-          onClick={() => setIsBraveBrowser(false)}
-          className="px-4 py-2 bg-[#F9C79A] border-2 border-black rounded-lg font-semibold hover:bg-amber-400 transition-colors shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5"
-        >
-          I've enabled them
-        </button>
-        <button
-          onClick={handleGitHubLogin}
-          className="px-4 py-2 bg-green-400 border-2 border-black rounded-lg font-semibold hover:bg-green-500 transition-colors shadow-[3px_3px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5"
-        >
-          Try Login
-        </button>
-      </div>
-      <button
-        onClick={() => setIsBraveBrowser(false)}
-        className="mt-3 text-xs text-gray-500 hover:text-gray-700 underline"
-      >
-        Dismiss this message
-      </button>
-    </div>
-  </div>
-)}
-
+      {isBraveBrowser && !isAuthenticated && (
+        <div className="container mx-auto mt-2 -mb-4">
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-2 rounded-md text-center text-sm flex flex-col items-center">
+            <div className="mb-2">
+              {/* Brave logo SVG */}
+              {/* Brave logo SVG (vector path, not emoji) */}
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="16" fill="#F36F21"/>
+                <g>
+                  <path d="M16 8.5c-2.5 0-4.5 2-4.5 4.5 0 2.2 1.6 4.1 3.7 4.4v2.1c0 .4.3.7.7.7s.7-.3.7-.7v-2.1c2.1-.3 3.7-2.2 3.7-4.4 0-2.5-2-4.5-4.5-4.5zm0 7.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" fill="#fff"/>
+                  <path d="M11.5 21c.3.6 1.1 1 2.1 1h4.8c1 0 1.8-.4 2.1-1l.7-1.3c.2-.3.1-.7-.2-.9-.3-.2-.7-.1-.9.2l-.7 1.3c-.1.2-.5.4-1 .4h-4.8c-.5 0-.9-.2-1-.4l-.7-1.3c-.2-.3-.6-.4-.9-.2-.3.2-.4.6-.2.9l.7 1.3z" fill="#fff"/>
+                </g>
+              </svg>
+            </div>
+            <span className="font-bold">Brave Browser Detected</span>
+            <span className="mt-1">Brave blocks third-party cookies by default, which breaks login.</span>
+            <span className="mt-1">To fix login issues:</span>
+            <ul className="list-disc list-inside text-left mt-1">
+              <li>Click the Brave logo in your browser’s address bar.</li>
+              <li>Allow third-party cookies for <span className="font-mono">gitforme.tech</span>.</li>
+              <li>Reload the page and try logging in again.</li>
+            </ul>
+            <span className="mt-2 text-xs text-gray-600">(This is needed because our backend and frontend are on different domains.)</span>
+          </div>
+        </div>
+      )}
  <AnimatePresence>
                 {showLoginPrompt && (
                     <LoginPromptModal 
