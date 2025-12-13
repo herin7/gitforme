@@ -80,7 +80,66 @@ Want to run GitForMe on your own machine? Here’s how.
 ### Installation Guide
 
 <details>
+<summary>Click to view step-by-step installation instructions for docker user</summary>
+
+
+
+1.  **Clone the Repository**
+    ```sh
+    git clone https://github.com/herin7/gitforme.git
+    cd gitforme
+    ```
+
+2.  **Make sure you have a .env file for the backend:**
+    ```sh
+    cd server
+    cp .env.devlopment .env
+
+    ```
+    Uncomment the commnetes variables : `REDIS_URL` , `MONGO_URL` and comment the upper 2 same variables and add your GitHub OAuth credentials:
+    ```env
+    GITHUB_CLIENT_ID=your_client_id
+    GITHUB_CLIENT_SECRET=your_client_secret
+    ```
+    Then, start the server:
+    ```sh
+    cd ..
+    docker compose up --build
+    ```
+
+3.  **Setup the LLM Server**
+    ```sh
+    cd ../llm-server
+    pip install -r requirements.txt
+    ```
+    Create a `.env` file and add your Azure OpenAI credentials:
+    ```env
+    AZURE_OPENAI_KEY=your_key
+    AZURE_OPENAI_ENDPOINT=your_endpoint
+    AZURE_OPENAI_DEPLOYMENT=your_deployment_name
+    ```
+    Then, start the server:
+    ```sh
+    flask run
+    ```
+
+4.  **Setup the Frontend**
+    ```sh
+    cd ../gitforme
+    npm install
+    ```
+    Then, start the development server:
+    ```sh
+    npm run dev
+    ```
+Your local GitForMe instance should now be running at `http://localhost:5173`!
+
+</details>
+
+<details>
 <summary>Click to view step-by-step installation instructions</summary>
+
+
 
 1.  **Clone the Repository**
     ```sh
