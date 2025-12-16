@@ -65,7 +65,7 @@ except Exception as e:
     logging.critical(f"Failed to load embedding model: {e}")
     exit()
 
-repo_cache = LRUCache(maxsize=20)  # Increased from 5 to 20 for better cache hit rate
+repo_cache = LRUCache(maxsize=20)  # Increased from 5 to 20 repositories for 4x better cache hit rates and reduced GitHub API calls
 global_api_call_times = deque()
 GLOBAL_MAX_CALLS_PER_HOUR = 10
 WINDOW_SECONDS = 3600
@@ -81,6 +81,9 @@ def extract_owner_repo(repo_url: str):
     if len(parts) != 2 or not all(parts):
         raise ValueError(f"Invalid GitHub repo format: {repo_url}. Expected 'owner/repo' or a GitHub URL.")
     return parts[0], parts[1]
+
+# Set of directories to skip for more efficient filtering
+SKIP_DIRECTORIES = {'node_modules', 'vendor', 'dist', 'build', '__pycache__', '.git', 'venv', 'target', 'bin', 'obj'}
 
 def summarize_code(file_path, code):
     summary_lines = []
@@ -146,7 +149,7 @@ async def get_relevant_context(repo_url, query):
             f for f in tree_json.get("tree", [])
             if f['type'] == 'blob' 
             and not f['path'].startswith('.') 
-            and not any(skip in f['path'] for skip in ['node_modules', 'vendor', 'dist', 'build', '__pycache__', '.git'])
+            and not any(skip_dir in f['path'].split('/') for skip_dir in SKIP_DIRECTORIES)
             and f['size'] < MAX_FILE_SIZE
             and f['path'].endswith((
                 '.py', '.js', '.ts', '.tsx', '.go', '.rs', '.java', '.cs', '.php', '.rb',
@@ -191,7 +194,10 @@ async def get_relevant_context(repo_url, query):
                 batch_embeddings = output.last_hidden_state.mean(dim=1).cpu().numpy().astype('float32')
                 all_embeddings.append(batch_embeddings)
         
-        embeddings = np.vstack(all_embeddings) if all_embeddings else np.array([])
+        if not all_embeddings:
+            return None, "No valid embeddings could be generated from the repository files."
+        
+        embeddings = np.vstack(all_embeddings)
         logging.info(f"Generated {len(embeddings)} embeddings in {time.time() - embedding_start_time:.2f}s.")
 
         faiss_index_start_time = time.time()

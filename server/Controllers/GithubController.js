@@ -53,7 +53,7 @@ exports.getRepoTimeline = async (req, res) => {
     
     // Trim to exact limit if we exceeded (keep only first maxCommits items)
     if (commits.length > maxCommits) {
-      commits.splice(maxCommits, commits.length - maxCommits);
+      commits.splice(maxCommits);
     }
 
     // Map tags to SHAs
