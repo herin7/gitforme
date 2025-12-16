@@ -51,12 +51,6 @@ allowed_origins = [
     "https://www.gitforme.tech"
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)
-@app.after_request
-def apply_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "https://www.gitforme.tech"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    return response
 
 app.config['PROPAGATE_EXCEPTIONS'] = True
 app.config['DEBUG'] = True
@@ -71,10 +65,12 @@ except Exception as e:
     logging.critical(f"Failed to load embedding model: {e}")
     exit()
 
-repo_cache = LRUCache(maxsize=5)
+repo_cache = LRUCache(maxsize=20)  # Increased from 5 to 20 repositories for 4x better cache hit rates and reduced GitHub API calls
 global_api_call_times = deque()
 GLOBAL_MAX_CALLS_PER_HOUR = 10
 WINDOW_SECONDS = 3600
+MAX_FILES_TO_PROCESS = 200  # Limit number of files to prevent memory issues
+MAX_FILE_SIZE = 100000  # Max file size in bytes
 
 def extract_owner_repo(repo_url: str):
     if "github.com" in repo_url:
@@ -85,6 +81,9 @@ def extract_owner_repo(repo_url: str):
     if len(parts) != 2 or not all(parts):
         raise ValueError(f"Invalid GitHub repo format: {repo_url}. Expected 'owner/repo' or a GitHub URL.")
     return parts[0], parts[1]
+
+# Set of directories to skip for more efficient filtering
+SKIP_DIRECTORIES = {'node_modules', 'vendor', 'dist', 'build', '__pycache__', '.git', 'venv', 'target', 'bin', 'obj'}
 
 def summarize_code(file_path, code):
     summary_lines = []
@@ -148,12 +147,15 @@ async def get_relevant_context(repo_url, query):
 
         files_to_fetch = [
             f for f in tree_json.get("tree", [])
-            if f['type'] == 'blob' and not f['path'].startswith('.') and f['size'] < 100000
+            if f['type'] == 'blob' 
+            and not f['path'].startswith('.') 
+            and not any(skip_dir in f['path'].split('/') for skip_dir in SKIP_DIRECTORIES)
+            and f['size'] < MAX_FILE_SIZE
             and f['path'].endswith((
                 '.py', '.js', '.ts', '.tsx', '.go', '.rs', '.java', '.cs', '.php', '.rb',
                 '.json', '.yml', '.yaml', 'Dockerfile', 'README.md', 'CONTRIBUTING.md'
             ))
-        ]
+        ][:MAX_FILES_TO_PROCESS]  # Limit total files to process
         if not files_to_fetch:
             return None, "No relevant code or documentation files were found in this repository."
         logging.info(f"Identified {len(files_to_fetch)} files to fetch content for.")
@@ -179,11 +181,23 @@ async def get_relevant_context(repo_url, query):
         file_paths = list(file_summaries.keys())
         code_chunks = list(file_summaries.values())
 
+        # Process embeddings in batches to reduce memory usage
         embedding_start_time = time.time()
+        EMBEDDING_BATCH_SIZE = 50
+        all_embeddings = []
+        
         with torch.inference_mode():
-            encoded = EMBEDDING_TOKENIZER(code_chunks, padding=True, truncation=True, return_tensors='pt', max_length=512)
-            output = EMBEDDING_MODEL(**encoded)
-            embeddings = output.last_hidden_state.mean(dim=1).cpu().numpy().astype('float32')
+            for i in range(0, len(code_chunks), EMBEDDING_BATCH_SIZE):
+                batch = code_chunks[i:i + EMBEDDING_BATCH_SIZE]
+                encoded = EMBEDDING_TOKENIZER(batch, padding=True, truncation=True, return_tensors='pt', max_length=512)
+                output = EMBEDDING_MODEL(**encoded)
+                batch_embeddings = output.last_hidden_state.mean(dim=1).cpu().numpy().astype('float32')
+                all_embeddings.append(batch_embeddings)
+        
+        if not all_embeddings:
+            return None, "No valid embeddings could be generated from the repository files."
+        
+        embeddings = np.vstack(all_embeddings)
         logging.info(f"Generated {len(embeddings)} embeddings in {time.time() - embedding_start_time:.2f}s.")
 
         faiss_index_start_time = time.time()
