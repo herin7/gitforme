@@ -12,12 +12,20 @@ const createGithubApi = async (session) => {
     if (user?.githubAccessToken) {
       headers['Authorization'] = `token ${user.githubAccessToken}`;
       console.log(`Making authenticated GitHub API request for user ${user.username}.`);
-      return axios.create({ baseURL: 'https://api.github.com', headers });
+      return axios.create({ 
+        baseURL: 'https://api.github.com', 
+        headers,
+        timeout: 30000 // 30 second timeout
+      });
     }
   }
   
   console.log('Making unauthenticated GitHub API request (fallback).');
-  return axios.create({ baseURL: 'https://api.github.com', headers });
+  return axios.create({ 
+    baseURL: 'https://api.github.com', 
+    headers,
+    timeout: 30000 // 30 second timeout
+  });
 };
 
 exports.getRepoTimeline = async (req, res) => {
@@ -108,31 +116,41 @@ exports.fetchCodeHotspots = async (req, res) => {
         params: { per_page: 100 }
       });
       
-      const commitDetailsPromises = commitsResponse.data.map(commit => 
-            githubApi.get(commit.url)
-          );
-          const commitDetails = await Promise.all(commitDetailsPromises);
-          
-          const fileChurn = new Map();
-          commitDetails.forEach(commitDetail => {
-            if (commitDetail.data.files) {
-              commitDetail.data.files.forEach(file => {
-                fileChurn.set(file.filename, (fileChurn.get(file.filename) || 0) + 1);
-              });
-            }
-          });
-          
-          const hotspots = Array.from(fileChurn, ([path, churn]) => ({ path, churn }))
-          .sort((a, b) => b.churn - a.churn);
-          
-          await redisClient.set(cacheKey, JSON.stringify(hotspots), { EX: 3600 });
-          res.json(hotspots);
-          
-        } catch (error) {
-          console.error("Error fetching code hotspots:", error.response?.data || error.message);
-        res.status(error.response?.status || 500).json({ message: "Error fetching code hotspots from GitHub." });
+      // Optimize: Batch API calls with concurrency limit to avoid rate limiting
+      const BATCH_SIZE = 10;
+      const fileChurn = new Map();
+      
+      for (let i = 0; i < commitsResponse.data.length; i += BATCH_SIZE) {
+        const batch = commitsResponse.data.slice(i, i + BATCH_SIZE);
+        const commitDetailsPromises = batch.map(commit => 
+          githubApi.get(commit.url).catch(err => {
+            console.warn(`Failed to fetch commit ${commit.sha}: ${err.message}`);
+            return null;
+          })
+        );
+        const commitDetails = await Promise.all(commitDetailsPromises);
+        
+        commitDetails.forEach(commitDetail => {
+          if (commitDetail?.data?.files) {
+            commitDetail.data.files.forEach(file => {
+              fileChurn.set(file.filename, (fileChurn.get(file.filename) || 0) + 1);
+            });
+          }
+        });
       }
-    };
+      
+      const hotspots = Array.from(fileChurn, ([path, churn]) => ({ path, churn }))
+        .sort((a, b) => b.churn - a.churn)
+        .slice(0, 50); // Limit to top 50 hotspots
+      
+      await redisClient.set(cacheKey, JSON.stringify(hotspots), { EX: 3600 });
+      res.json(hotspots);
+      
+    } catch (error) {
+      console.error("Error fetching code hotspots:", error.response?.data || error.message);
+      res.status(error.response?.status || 500).json({ message: "Error fetching code hotspots from GitHub." });
+    }
+  };
 
     exports.fetchIssueTimeline = async (req, res) => {
     const { username, reponame, issue_number } = req.params;
@@ -381,14 +399,26 @@ exports.fetchDeployments = async (req, res) => {
       return res.json([]);
     }
     
-    const statusPromises = deployments.map(deployment => 
-      githubApi.get(deployment.statuses_url).then(statusResponse => ({
-        ...deployment,
-        statuses: statusResponse.data
-      }))
-    );
+    // Optimize: Process in batches and add error handling
+    const BATCH_SIZE = 5;
+    const deploymentsWithStatuses = [];
     
-    const deploymentsWithStatuses = await Promise.all(statusPromises);
+    for (let i = 0; i < deployments.length; i += BATCH_SIZE) {
+      const batch = deployments.slice(i, i + BATCH_SIZE);
+      const statusPromises = batch.map(deployment => 
+        githubApi.get(deployment.statuses_url)
+          .then(statusResponse => ({
+            ...deployment,
+            statuses: statusResponse.data
+          }))
+          .catch(err => {
+            console.warn(`Failed to fetch statuses for deployment ${deployment.id}: ${err.message}`);
+            return { ...deployment, statuses: [] };
+          })
+      );
+      const batchResults = await Promise.all(statusPromises);
+      deploymentsWithStatuses.push(...batchResults);
+    }
     
     const activeDeploymentUrls = new Map();
     deploymentsWithStatuses.forEach(deployment => {

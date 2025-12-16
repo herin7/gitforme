@@ -6,3 +6,7 @@ node_modules
 llm-server/.venv3
 venv3/
 llm-server\venv3
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
