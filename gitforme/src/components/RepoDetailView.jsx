@@ -232,13 +232,24 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
         }
         const apiServerUrl = import.meta.env.VITE_API_URL;
         const apiBase = `${apiServerUrl}/api/github/${username}/${reponame}`;
+        const contentUrl = `${apiServerUrl}/api/github/repos/${username}/${reponame}/file/${encodeURIComponent(fileNode.path)}`;
 
         try {
-            const contentRes = await axios.get(`${apiBase}/contents/${fileNode.path}`, {
+            const contentRes = await axios.get(contentUrl, {
                 withCredentials: true,
             });
+            const { data } = contentRes;
+            let decodedContent = data?.content || data;
+            if (data?.encoding === 'base64' && data.content) {
+                try {
+                    decodedContent = atob(data.content.replace(/\s/g, ''));
+                } catch (decodeErr) {
+                    console.error("Failed to decode file content:", decodeErr);
+                    decodedContent = '[Unable to decode file content]';
+                }
+            }
             const fileUrl = `https://github.com/${username}/${reponame}/blob/HEAD/${fileNode.path}`;
-            setModalState({ isOpen: true, content: contentRes.data, fileName: fileNode.path, fileUrl });
+            setModalState({ isOpen: true, content: decodedContent, fileName: fileNode.path, fileUrl });
         } catch (err) {
             console.error("Failed to fetch file content:", err);
             toast.error("Could not load file content. It might be binary, too large, or empty.");
