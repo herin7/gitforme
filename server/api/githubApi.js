@@ -78,11 +78,19 @@ const createGithubApi = async (session) => {
       console.log(
         `Making authenticated GitHub API request for user ${user.username}.`
       );
-      return axios.create({ baseURL: 'https://api.github.com', headers });
+      return axios.create({ 
+        baseURL: 'https://api.github.com', 
+        headers,
+        timeout: 30000 // 30 second timeout
+      });
     }
   }
 
   console.log('Making unauthenticated GitHub API request (fallback).');
-  return axios.create({ baseURL: 'https://api.github.com', headers });
+  return axios.create({ 
+    baseURL: 'https://api.github.com', 
+    headers,
+    timeout: 30000 // 30 second timeout
+  });
 };
 

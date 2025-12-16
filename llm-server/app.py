@@ -156,15 +156,32 @@ async def get_relevant_context(repo_url, query):
         ]
         if not files_to_fetch:
             return None, "No relevant code or documentation files were found in this repository."
+        
+        # Optimize: Limit number of files to process to avoid memory issues
+        MAX_FILES = 100
+        if len(files_to_fetch) > MAX_FILES:
+            logging.info(f"Repository has {len(files_to_fetch)} files. Limiting to {MAX_FILES} most relevant files.")
+            # Prioritize README, config files, and main code files
+            priority_files = [f for f in files_to_fetch if 'README' in f['path'] or 'config' in f['path'].lower()]
+            other_files = [f for f in files_to_fetch if f not in priority_files]
+            files_to_fetch = priority_files[:10] + other_files[:MAX_FILES-10]
+        
         logging.info(f"Identified {len(files_to_fetch)} files to fetch content for.")
 
         download_start_time = time.time()
-        async with aiohttp.ClientSession() as session:
-            tasks = [
-                download_content(session, f"https://raw.githubusercontent.com/{owner}/{repo}/{default_branch}/{f['path']}")
-                for f in files_to_fetch
-            ]
-            raw_contents = await asyncio.gather(*tasks)
+        # Optimize: Download files with concurrency control and timeout
+        async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
+            # Process files in batches to avoid overwhelming the server
+            BATCH_SIZE = 20
+            raw_contents = []
+            for i in range(0, len(files_to_fetch), BATCH_SIZE):
+                batch = files_to_fetch[i:i+BATCH_SIZE]
+                tasks = [
+                    download_content(session, f"https://raw.githubusercontent.com/{owner}/{repo}/{default_branch}/{f['path']}")
+                    for f in batch
+                ]
+                batch_contents = await asyncio.gather(*tasks)
+                raw_contents.extend(batch_contents)
         logging.info(f"Downloaded {len([c for c in raw_contents if c is not None])} file contents in {time.time() - download_start_time:.2f}s.")
 
         summarize_start_time = time.time()
