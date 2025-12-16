@@ -2,23 +2,8 @@ const axios = require('axios');
 const User = require('../models/UserModel');
 const redisClient = require('../util/RediaClient');
 const { Octokit } = require("@octokit/rest");
+const { createGithubApi } = require('../util/GithubApiHelper');
 
-
-const createGithubApi = async (session) => {
-  const headers = { 'Accept': 'application/vnd.github.v3+json' };
-  
-  if (session?.userId) {
-    const user = await User.findById(session.userId);
-    if (user?.githubAccessToken) {
-      headers['Authorization'] = `token ${user.githubAccessToken}`;
-      console.log(`Making authenticated GitHub API request for user ${user.username}.`);
-      return axios.create({ baseURL: 'https://api.github.com', headers });
-    }
-  }
-  
-  console.log('Making unauthenticated GitHub API request (fallback).');
-  return axios.create({ baseURL: 'https://api.github.com', headers });
-};
 
 exports.getRepoTimeline = async (req, res) => {
   const { username, reponame } = req.params;
@@ -40,20 +25,34 @@ exports.getRepoTimeline = async (req, res) => {
     // 2. Fetch all tags
     const { data: tagsData } = await githubApi.get(`/repos/${username}/${reponame}/tags`);
 
-    // 3. Fetch commits (limit to 500 using per_page and pagination)
+    // 3. Fetch commits (limit to 500 using per_page and pagination with early exit)
     const commits = [];
-    let page = 1;
+    const maxCommits = 500;
     const perPage = 100;
+    const maxPages = Math.ceil(maxCommits / perPage);
 
-    while (commits.length < 500) {
-      const { data: pageCommits } = await githubApi.get(`/repos/${username}/${reponame}/commits`, {
-        params: { per_page: perPage, page },
-      });
+    // Use Promise.all to fetch pages in parallel for better performance
+    const pagePromises = [];
+    for (let page = 1; page <= maxPages; page++) {
+      pagePromises.push(
+        githubApi.get(`/repos/${username}/${reponame}/commits`, {
+          params: { per_page: perPage, page },
+        }).catch(err => {
+          console.warn(`Failed to fetch page ${page}:`, err.message);
+          return { data: [] };
+        })
+      );
+    }
+
+    const pageResults = await Promise.all(pagePromises);
+    for (const { data: pageCommits } of pageResults) {
       if (pageCommits.length === 0) break;
       commits.push(...pageCommits);
-      if (pageCommits.length < perPage) break;
-      page++;
+      if (commits.length >= maxCommits) break;
     }
+    
+    // Trim to exact limit if we exceeded
+    commits.splice(maxCommits);
 
     // Map tags to SHAs
     const tagMap = {};
@@ -108,31 +107,35 @@ exports.fetchCodeHotspots = async (req, res) => {
         params: { per_page: 100 }
       });
       
-      const commitDetailsPromises = commitsResponse.data.map(commit => 
-            githubApi.get(commit.url)
-          );
-          const commitDetails = await Promise.all(commitDetailsPromises);
-          
-          const fileChurn = new Map();
-          commitDetails.forEach(commitDetail => {
-            if (commitDetail.data.files) {
-              commitDetail.data.files.forEach(file => {
-                fileChurn.set(file.filename, (fileChurn.get(file.filename) || 0) + 1);
-              });
-            }
-          });
-          
-          const hotspots = Array.from(fileChurn, ([path, churn]) => ({ path, churn }))
-          .sort((a, b) => b.churn - a.churn);
-          
-          await redisClient.set(cacheKey, JSON.stringify(hotspots), { EX: 3600 });
-          res.json(hotspots);
-          
-        } catch (error) {
-          console.error("Error fetching code hotspots:", error.response?.data || error.message);
-        res.status(error.response?.status || 500).json({ message: "Error fetching code hotspots from GitHub." });
+      // Limit concurrency to avoid overwhelming the API
+      const CONCURRENCY_LIMIT = 10;
+      const fileChurn = new Map();
+      
+      for (let i = 0; i < commitsResponse.data.length; i += CONCURRENCY_LIMIT) {
+        const batch = commitsResponse.data.slice(i, i + CONCURRENCY_LIMIT);
+        const batchPromises = batch.map(commit => githubApi.get(commit.url));
+        const batchDetails = await Promise.all(batchPromises);
+        
+        batchDetails.forEach(commitDetail => {
+          if (commitDetail.data.files) {
+            commitDetail.data.files.forEach(file => {
+              fileChurn.set(file.filename, (fileChurn.get(file.filename) || 0) + 1);
+            });
+          }
+        });
       }
-    };
+          
+      const hotspots = Array.from(fileChurn, ([path, churn]) => ({ path, churn }))
+        .sort((a, b) => b.churn - a.churn);
+          
+      await redisClient.set(cacheKey, JSON.stringify(hotspots), { EX: 3600 });
+      res.json(hotspots);
+          
+    } catch (error) {
+      console.error("Error fetching code hotspots:", error.response?.data || error.message);
+      res.status(error.response?.status || 500).json({ message: "Error fetching code hotspots from GitHub." });
+    }
+};
 
     exports.fetchIssueTimeline = async (req, res) => {
     const { username, reponame, issue_number } = req.params;
@@ -381,14 +384,27 @@ exports.fetchDeployments = async (req, res) => {
       return res.json([]);
     }
     
-    const statusPromises = deployments.map(deployment => 
-      githubApi.get(deployment.statuses_url).then(statusResponse => ({
-        ...deployment,
-        statuses: statusResponse.data
-      }))
-    );
+    // Batch deployment status fetches with concurrency control
+    const CONCURRENCY_LIMIT = 10;
+    const deploymentsWithStatuses = [];
     
-    const deploymentsWithStatuses = await Promise.all(statusPromises);
+    for (let i = 0; i < deployments.length; i += CONCURRENCY_LIMIT) {
+      const batch = deployments.slice(i, i + CONCURRENCY_LIMIT);
+      const batchPromises = batch.map(deployment => 
+        githubApi.get(deployment.statuses_url)
+          .then(statusResponse => ({
+            ...deployment,
+            statuses: statusResponse.data
+          }))
+          .catch(err => {
+            console.warn(`Failed to fetch status for deployment ${deployment.id}:`, err.message);
+            return { ...deployment, statuses: [] };
+          })
+      );
+      
+      const batchResults = await Promise.all(batchPromises);
+      deploymentsWithStatuses.push(...batchResults);
+    }
     
     const activeDeploymentUrls = new Map();
     deploymentsWithStatuses.forEach(deployment => {

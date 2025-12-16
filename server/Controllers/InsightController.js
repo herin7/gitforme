@@ -1,26 +1,7 @@
 const axios = require('axios');
 const User = require('../models/UserModel');
 const redisClient = require('../util/RediaClient');
-
-const createGithubApi = async (session) => {
-    const headers = { 'Accept': 'application/vnd.github.v3+json' };
-  
-    if (session?.userId) {
-        try {
-            const user = await User.findById(session.userId);
-            if (user?.githubAccessToken) {
-                headers['Authorization'] = `token ${user.githubAccessToken}`;
-                console.log(`Making authenticated GitHub API request for user ${user.username}.`);
-                return axios.create({ baseURL: 'https://api.github.com', headers });
-            }
-        } catch (dbError) {
-            console.error("Error fetching user for authenticated API call:", dbError.message);
-        }
-    }
-  
-    console.log('Making unauthenticated GitHub API request (fallback).');
-    return axios.create({ baseURL: 'https://api.github.com', headers });
-};
+const { createGithubApi } = require('../util/GithubApiHelper');
 
 exports.fetchDependencyHealth = async (req, res) => {
     const { username, reponame } = req.params;
@@ -59,22 +40,33 @@ exports.fetchDependencyHealth = async (req, res) => {
             return res.json({ dependencies: [], summary: { total: 0, outdated: 0, deprecated: 0, licenses: [] } });
         }
 
-        const dependencyPromises = Object.entries(dependencies).map(async ([name, version]) => {
-            try {
-                const npmResponse = await axios.get(`https://registry.npmjs.org/${name}`);
-                const latestVersion = npmResponse.data['dist-tags'].latest;
-                const license = npmResponse.data.license || 'N/A';
-                const isDeprecated = !!npmResponse.data.deprecated;
-                const isOutdated = latestVersion !== version.replace(/[\^~>=<]/g, '');
+        // Batch dependency checks with concurrency control to avoid overwhelming npm registry
+        const CONCURRENCY_LIMIT = 10;
+        const dependencyEntries = Object.entries(dependencies);
+        const healthReport = [];
 
-                return { name, version, latestVersion, license, isOutdated, isDeprecated };
-            } catch (error) {
-                console.error(`Error fetching data for ${name}:`, error.message);
-                return { name, version, error: 'Package not found in npm registry' };
-            }
-        });
+        for (let i = 0; i < dependencyEntries.length; i += CONCURRENCY_LIMIT) {
+            const batch = dependencyEntries.slice(i, i + CONCURRENCY_LIMIT);
+            const batchPromises = batch.map(async ([name, version]) => {
+                try {
+                    const npmResponse = await axios.get(`https://registry.npmjs.org/${name}`, {
+                        timeout: 5000 // Add timeout to prevent hanging
+                    });
+                    const latestVersion = npmResponse.data['dist-tags'].latest;
+                    const license = npmResponse.data.license || 'N/A';
+                    const isDeprecated = !!npmResponse.data.deprecated;
+                    const isOutdated = latestVersion !== version.replace(/[\^~>=<]/g, '');
 
-        const healthReport = await Promise.all(dependencyPromises);
+                    return { name, version, latestVersion, license, isOutdated, isDeprecated };
+                } catch (error) {
+                    console.error(`Error fetching data for ${name}:`, error.message);
+                    return { name, version, error: 'Package not found in npm registry' };
+                }
+            });
+
+            const batchResults = await Promise.all(batchPromises);
+            healthReport.push(...batchResults);
+        }
         
         const summary = {
             total: healthReport.length,
