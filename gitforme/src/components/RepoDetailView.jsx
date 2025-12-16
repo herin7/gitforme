@@ -90,6 +90,20 @@ const buildHierarchy = (flatList) => {
 
 const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
     const { username, reponame } = useParams();
+    const apiServerUrl = import.meta.env.VITE_API_URL;
+    const apiRoot = `${apiServerUrl}/api/github`;
+    const repoBase = `${apiRoot}/${username}/${reponame}`;
+    const repoFilesBase = `${apiRoot}/repos/${username}/${reponame}`;
+
+    const decodeBase64ToUtf8 = useCallback((encoded) => {
+        try {
+            const bytes = Uint8Array.from(atob(encoded.replace(/\s/g, '')), char => char.charCodeAt(0));
+            return new TextDecoder('utf-8').decode(bytes);
+        } catch (err) {
+            console.error("Failed to decode base64 content:", err);
+            return null;
+        }
+    }, []);
 
     // State management for all repository data and UI status
     const [repoData, setRepoData] = useState({});
@@ -125,30 +139,28 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
             setIsLoading(true);
             setError(null);
             try {
-                const apiServerUrl = import.meta.env.VITE_API_URL;
-                const apiBase = `${apiServerUrl}/api/github/${username}/${reponame}`;
-
-                const repoRes = await axios.get(apiBase, { withCredentials: true });
+                const repoRes = await axios.get(repoBase, { withCredentials: true });
                 const defaultBranch = repoRes.data.default_branch || 'main';
 
                 const results = await Promise.allSettled([
-                    axios.get(`${apiBase}/readme`, { withCredentials: true }),
-                    axios.get(`${apiBase}/git/trees/${defaultBranch}?recursive=1`, { withCredentials: true }),
-                    axios.get(`${apiBase}/contributors`, { withCredentials: true }),
-                    axios.get(`${apiBase}/deployments`, { withCredentials: true }),
-                    axios.get(`${apiBase}/issues`, { withCredentials: true }),
-                    axios.get(`${apiBase}/good-first-issues`, { withCredentials: true }),
-                    axios.get(`${apiBase}/insights`, { withCredentials: true }),
-                    axios.get(`${apiBase}/hotspots`, { withCredentials: true }),
-                    axios.get(`${apiBase}/insights/dependencies`, { withCredentials: true }),
-                    axios.get(`${apiBase}/timeline`, { withCredentials: true }) ,
+                    axios.get(`${repoBase}/readme`, { withCredentials: true }),
+                    axios.get(`${repoBase}/git/trees/${defaultBranch}?recursive=1`, { withCredentials: true }),
+                    axios.get(`${repoBase}/contributors`, { withCredentials: true }),
+                    axios.get(`${repoBase}/deployments`, { withCredentials: true }),
+                    axios.get(`${repoBase}/issues`, { withCredentials: true }),
+                    axios.get(`${repoBase}/good-first-issues`, { withCredentials: true }),
+                    axios.get(`${repoBase}/insights`, { withCredentials: true }),
+                    axios.get(`${repoBase}/hotspots`, { withCredentials: true }),
+                    axios.get(`${repoBase}/insights/dependencies`, { withCredentials: true }),
+                    axios.get(`${repoBase}/timeline`, { withCredentials: true }) ,
                 ]);
 
                 const getData = (result, defaultValue) => result.status === 'fulfilled' ? result.value.data : defaultValue;
 
                 setRepoData(repoRes.data);
                 const readmeData = getData(results[0], { content: '' });
-                setReadmeContent(readmeData.content ? atob(readmeData.content) : '# No README found');
+                const decodedReadme = readmeData.content ? decodeBase64ToUtf8(readmeData.content) : null;
+                setReadmeContent(decodedReadme || '# No README found');
                 const treeData = getData(results[1], { tree: [] }).tree || [];
                 setFlatTree(treeData);
                 setHierarchicalTree(buildHierarchy(treeData));
@@ -223,22 +235,27 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
             }
         };
         fetchData();
-    }, [username, reponame]);
+    }, [reponame, username]);
 
     const handleFileSelect = useCallback(async (fileNode) => {
         if (fileNode.type === 'tree') {
             setFocusedNode(fileNode);
             return;
         }
-        const apiServerUrl = import.meta.env.VITE_API_URL;
-        const apiBase = `${apiServerUrl}/api/github/${username}/${reponame}`;
+        // File content is served from the dedicated /repos/.../file endpoint exposed by the backend.
+        const fileContentBase = `${repoFilesBase}/file`;
+        const contentUrl = `${fileContentBase}/${encodeURIComponent(fileNode.path)}`;
 
         try {
-            const contentRes = await axios.get(`${apiBase}/contents/${fileNode.path}`, {
+            const contentRes = await axios.get(contentUrl, {
                 withCredentials: true,
             });
+            const { data } = contentRes;
+            const decodedContent = (data?.encoding === 'base64' && data.content)
+                ? decodeBase64ToUtf8(data.content) || '[Unable to decode file content]'
+                : (data?.content ?? data);
             const fileUrl = `https://github.com/${username}/${reponame}/blob/HEAD/${fileNode.path}`;
-            setModalState({ isOpen: true, content: contentRes.data, fileName: fileNode.path, fileUrl });
+            setModalState({ isOpen: true, content: decodedContent, fileName: fileNode.path, fileUrl });
         } catch (err) {
             console.error("Failed to fetch file content:", err);
             toast.error("Could not load file content. It might be binary, too large, or empty.");
@@ -249,7 +266,7 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
         setCommitHistory([]);
 
         try {
-            const historyRes = await axios.get(`${apiBase}/commits`, {
+            const historyRes = await axios.get(`${repoBase}/commits`, {
                 params: { path: fileNode.path },
                 withCredentials: true,
             });
@@ -260,7 +277,7 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
         } finally {
             setIsHistoryLoading(false);
         }
-    }, [username, reponame]);
+    }, [reponame, username]);
 
     const formatDuration = (ms) => {
         if (ms === null || ms === undefined) return 'N/A';
