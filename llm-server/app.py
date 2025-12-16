@@ -51,12 +51,6 @@ allowed_origins = [
     "https://www.gitforme.tech"
 ]
 CORS(app, origins=allowed_origins, supports_credentials=True)
-@app.after_request
-def apply_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "https://www.gitforme.tech"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    return response
 
 app.config['PROPAGATE_EXCEPTIONS'] = True
 app.config['DEBUG'] = True
