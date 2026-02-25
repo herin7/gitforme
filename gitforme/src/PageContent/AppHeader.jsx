@@ -112,15 +112,14 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                             </button>
                                         )}
                                         <div className="flex flex-col items-center">
-                                            <a href="https://www.producthunt.com/products/gitforme?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-gitforme" target="_blank" rel="noopener noreferrer">
-                                                <img
-                                                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=995370&theme=neutral" 
-                                                    alt="GitForme - Understand any GitHub repository in minutes, not days. | Product Hunt" 
-                                                    style={{width: '150px', height: '35px'}}
-                                                    width="250"
-                                                    height="54"
-                                                />
-                                            </a>
+                                    <a
+  href="https://whatdoc.xyz"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+>
+  🚀 Visit WhatDoc
+</a>
                                         </div>
                                     </div>
                                 </div>
@@ -171,15 +170,14 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                 </button>
                             )}
                                 <div className="flex flex-col items-center">
-                                <a href="https://www.producthunt.com/products/gitforme?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-gitforme" target="_blank" rel="noopener noreferrer">
-                                    <img
-                                        src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=995370&theme=neutral" 
-                                        alt="GitForme - Understand any GitHub repository in minutes, not days. | Product Hunt" 
-                                        style={{width: '150px', height: '35px'}}
-                                        width="250"
-                                        height="54"
-                                    />
-                                </a>
+                               <a
+  href="https://whatdoc.xyz"
+  target="_blank"
+  rel="noopener noreferrer"
+  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+>
+  🚀 WhatDoc
+</a>
                             </div>
                                         <a
                                 href="https://coff.ee/herinsoni3a"
