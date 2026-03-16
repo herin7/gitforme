@@ -62,6 +62,7 @@ GitForMe uses a microservice architecture to separate concerns and ensure scalab
 
 ## 🎥 Watch How GitForMe Works
 
+[System Arc.](https://excalidraw.com/#json=BjkIFKopktxRPqetWz4og,OP6S0PdlFpPYx-GKGxHnQQ)
 * Get a quick walkthrough of the platform in under 5 minutes!
 
 [GitForMe Explainer Video](https://youtu.be/5_eIceKWo7o)
