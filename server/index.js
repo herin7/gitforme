@@ -66,11 +66,11 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: config.isProduction, // <-- Using value from config
+    proxy: config.isProduction, 
     cookie: {
-      secure: true,              // 🔑 Render uses HTTPS
+      secure: config.isProduction, // 🔑 Only secure in production
       httpOnly: true,
-      sameSite: "none",          // 🔑 Required for cross-site cookies
+      sameSite: config.isProduction ? "none" : "lax", // 🔑 Lax in development
       maxAge: 1000 * 60 * 60 * 24
     },
   })

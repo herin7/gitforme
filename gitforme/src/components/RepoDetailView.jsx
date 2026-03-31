@@ -1,6 +1,3 @@
-/*
-File: gitforme/src/components/RepoDetailView.jsx
-*/
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
@@ -29,6 +26,7 @@ import { FeatureStoryModal } from './FeatureStoryModal';
 import { ReportModal } from './ReportModal';
 import { GoodFirstIssues } from '../cards/GoodFirstIssues';
 import { DependencyDashboard } from './DependencyDashboard';
+import { VulnerabilityScanner } from './VulnerabilityScanner';
 
 
 const copyToClipboard = (text) => {
@@ -88,7 +86,7 @@ const buildHierarchy = (flatList) => {
 };
 
 
-const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
+const RepoDetailView = ({ isAuthenticated, onApiError, onRateLimitExceeded, onApiDown }) => {
     const { username, reponame } = useParams();
     const apiServerUrl = import.meta.env.VITE_API_URL;
     const apiRoot = `${apiServerUrl}/api/github`;
@@ -119,7 +117,10 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
     const [dependencyHealth, setDependencyHealth] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Defaulting to directory tab
     const [activeTab, setActiveTab] = useState('directory');
+
     const [focusedNode, setFocusedNode] = useState(null);
     const [selectedFileForHistory, setSelectedFileForHistory] = useState(null);
     const [commitHistory, setCommitHistory] = useState([]);
@@ -133,7 +134,7 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [timelineData, setTimelineData] = useState(null);
     const [isTimelineLoading, setIsTimelineLoading] = useState(true);
-    
+
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
@@ -152,7 +153,7 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
                     axios.get(`${repoBase}/insights`, { withCredentials: true }),
                     axios.get(`${repoBase}/hotspots`, { withCredentials: true }),
                     axios.get(`${repoBase}/insights/dependencies`, { withCredentials: true }),
-                    axios.get(`${repoBase}/timeline`, { withCredentials: true }) ,
+                    axios.get(`${repoBase}/timeline`, { withCredentials: true }),
                 ]);
 
                 const getData = (result, defaultValue) => result.status === 'fulfilled' ? result.value.data : defaultValue;
@@ -260,7 +261,7 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
             console.error("Failed to fetch file content:", err);
             toast.error("Could not load file content. It might be binary, too large, or empty.");
         }
-        
+
         setSelectedFileForHistory({ ...fileNode, owner: username, repo: reponame });
         setIsHistoryLoading(true);
         setCommitHistory([]);
@@ -285,6 +286,7 @@ const RepoDetailView = ({ onApiError, onRateLimitExceeded, onApiDown }) => {
         const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         return `${days}d ${hours}h`;
     };
+
     const handleCommitSelect = async (commit) => {
         console.log("Selected commit from timeline:", commit);
     };
@@ -315,7 +317,7 @@ BODY: ${issue.body || 'No description.'}
     const handleGenerateReport = () => {
         setIsReportLoading(true);
         setIsReportModalOpen(true);
-        
+
         let md = `# 📊 Repository Report: ${repoData.full_name}\n\n`;
         md += `_${repoData.description}_\n\n`;
         md += `**URL:** [${repoData.html_url}](${repoData.html_url})\n`;
@@ -336,7 +338,7 @@ BODY: ${issue.body || 'No description.'}
         } else {
             md += `_No hotspot data available._\n\n`;
         }
-        
+
         setReportContent(md);
         setIsReportLoading(false);
     };
@@ -357,7 +359,7 @@ BODY: ${issue.body || 'No description.'}
             context += `## 📁 File Structure\n`;
             context += flatTree.map(file => `- ${file.path}`).join('\n') + '\n\n';
         }
-        
+
         if (readmeContent) {
             context += `## 📄 README.md\n`;
             context += '```\n' + readmeContent + '\n```\n';
@@ -401,8 +403,9 @@ BODY: ${issue.body || 'No description.'}
         );
     }
 
-    const TabButton = ({ name, label }) => (
-        <button onClick={() => setActiveTab(name)} className={`font-bold py-3 px-5 transition-colors duration-200 relative text-lg ${activeTab === name ? 'text-black' : 'text-gray-500 hover:text-black'}`}>
+    const TabButton = ({ name, label, icon }) => (
+        <button onClick={() => setActiveTab(name)} className={`font-bold flex items-center gap-2 py-3 px-5 transition-colors duration-200 relative text-lg ${activeTab === name ? 'text-black' : 'text-gray-500 hover:text-black'}`}>
+            {icon && <span>{icon}</span>}
             {label}
             {activeTab === name && <div className="absolute bottom-0 left-0 right-0 h-1 bg-black rounded-t-full"></div>}
         </button>
@@ -420,35 +423,64 @@ BODY: ${issue.body || 'No description.'}
 
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <div className="bg-white border-2 border-black rounded-xl shadow-[8px_8px_0px_rgba(0,0,0,1)] h-full flex flex-col">
-                        <div className="flex border-b-2 border-black mb-1 flex-shrink-0 flex-wrap">
+                    <div className="bg-white border-2 border-black rounded-xl shadow-[8px_8px_0px_rgba(0,0,0,1)] h-full flex flex-col overflow-hidden">
+
+                        {/* --- TAB NAVIGATION WITH NEW SECURITY TAB --- */}
+                        <div className="flex border-b-2 border-black bg-gray-50 overflow-x-auto flex-nowrap hide-scrollbar">
                             <TabButton name="directory" label="Directory" />
                             <TabButton name="graph" label="File Map" />
-                            {/* THIS IS THE MISSING BUTTON */}
                             <TabButton name="timeline" label="Timeline" />
                             <TabButton name="issues" label="Issues" />
                             <TabButton name="insights" label="Insights" />
+                            <TabButton name="security" label="Security" icon="🛡️" />
                         </div>
-                        <div className="flex-grow overflow-y-auto p-2 sm:p-4 min-h-[40rem]">
+
+                        <div className="flex-grow overflow-y-auto p-4 min-h-[40rem] bg-white">
                             {activeTab === 'directory' && <DirectoryStructure tree={hierarchicalTree} onFileSelect={handleFileSelect} hotspots={hotspots} />}
+
                             {activeTab === 'graph' && <FileGraph treeData={flatTree} onFileSelect={handleFileSelect} onFolderSelect={setFocusedNode} focusedNode={focusedNode} hotspots={hotspots} />}
+
                             {activeTab === 'timeline' && (
-                                isTimelineLoading 
-                                ? <SkeletonLoader /> 
-                                : <GitHistoryTimeline timelineData={timelineData} onCommitSelect={handleCommitSelect} />
+                                isTimelineLoading
+                                    ? <SkeletonLoader />
+                                    : <GitHistoryTimeline timelineData={timelineData} onCommitSelect={handleCommitSelect} />
                             )}
+
                             {activeTab === 'issues' && <IssuesView issues={issues} onAddContext={handleAddSingleIssueToContext} onShowStory={setStoryModalIssue} />}
+
                             {activeTab === 'insights' && (
                                 <div>
                                     <InsightsView insights={insights} />
-                                    <div className="my-6 border-t-2 border-dashed border-gray-300"></div>
-                                    <DependencyDashboard dependencyHealth={dependencyHealth} />
+                                </div>
+                            )}
+
+                            {/* --- NEW DEDICATED SECURITY TAB VIEW --- */}
+                            {activeTab === 'security' && (
+                                <div className="space-y-8 pb-4">
+                                    <div className="bg-white border-2 border-black rounded-lg shadow-[4px_4px_0px_rgba(0,0,0,1)] p-4">
+                                        <h3 className="font-bold text-xl border-b-2 border-black mb-4 pb-2 flex items-center gap-2">
+                                            🔍 OSV Vulnerability Scanner
+                                        </h3>
+                                        <VulnerabilityScanner
+                                            username={username}
+                                            reponame={reponame}
+                                            isAuthenticated={isAuthenticated}
+                                        />
+                                    </div>
+
+                                    <div className="bg-white border-2 border-black rounded-lg shadow-[4px_4px_0px_rgba(0,0,0,1)] p-4">
+                                        <h3 className="font-bold text-xl border-b-2 border-black mb-4 pb-2 flex items-center gap-2">
+                                            📦 Dependency Health
+                                        </h3>
+                                        <DependencyDashboard dependencyHealth={dependencyHealth} />
+                                    </div>
                                 </div>
                             )}
                         </div>
                     </div>
                 </div>
 
+                {/* Right Side Column (Context Builder & Accordions) */}
                 <div className="lg:col-span-1 flex flex-col gap-8">
                     <div className="bg-white p-4 sm:p-6 border-2 border-black rounded-xl shadow-[8px_8px_0px_rgba(0,0,0,1)]">
                         <h3 className="font-bold text-xl border-b-2 border-black mb-4 pb-2">LLM Context Builder</h3>

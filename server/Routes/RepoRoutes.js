@@ -13,10 +13,13 @@ const {
     fetchDeployments,
     fetchFileCommits,
     fetchRepoFileContents,
-    
+
 } = require('../Controllers/GithubController');
 
-const { fetchDependencyHealth } = require('../Controllers/InsightController');
+const { fetchDependencyHealth,
+    scanSingleRepoVulnerabilities,
+    scanAllReposVulnerabilities
+} = require('../Controllers/InsightController');
 
 // router.get('/repos/:username/:reponame/file/*', fetchFileContent);
 // router.get('/repos/:username/:reponame/file/*', fetchFileContent);
@@ -219,5 +222,8 @@ router.get('/:username/:reponame/timeline', getRepoTimeline);
  *         description: Error fetching pull request insights from GitHub.
  */
 router.get('/:username/:reponame/insights', fetchRepoInsights);
+
+router.post('/scan/all', scanAllReposVulnerabilities);
+router.post('/scan/:username/:reponame', scanSingleRepoVulnerabilities);
 
 module.exports = router;
