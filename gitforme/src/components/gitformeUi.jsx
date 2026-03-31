@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,46 +15,46 @@ const ChatIcon = () => (
 
 const LaptopIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55A1 1 0 0 1 20.28 20H3.72a1 1 0 0 1-.98-1.45L4 16"/>
+    <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55A1 1 0 0 1 20.28 20H3.72a1 1 0 0 1-.98-1.45L4 16" />
   </svg>
 );
 
 // --- Login Prompt Modal Component ---
 const LoginPromptModal = ({ onLogin, onClose }) => (
+  <motion.div
+    className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+  >
     <motion.div
-        className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      className="bg-white rounded-lg p-8 shadow-2xl text-center max-w-sm"
+      initial={{ scale: 0.8, y: 20 }}
+      animate={{ scale: 1, y: 0 }}
+      exit={{ scale: 0.8, y: 20 }}
     >
-        <motion.div
-            className="bg-white rounded-lg p-8 shadow-2xl text-center max-w-sm"
-            initial={{ scale: 0.8, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.8, y: 20 }}
-        >
-            <h2 className="text-2xl font-bold mb-3 text-gray-800">Usage Limit Reached</h2>
-            <p className="text-gray-600 mb-6">
-                You've reached your free usage limit, or the public GitHub API rate limit was exceeded. Please log in to continue.
-            </p>
-            <button
-                onClick={onLogin}
-                className="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-900 transition-colors duration-300"
-            >
-                Login with GitHub
-            </button>
-            <button
-                onClick={onClose}
-                className="mt-3 text-sm text-gray-500 hover:underline"
-            >
-                Close
-            </button>
-        </motion.div>
+      <h2 className="text-2xl font-bold mb-3 text-gray-800">Usage Limit Reached</h2>
+      <p className="text-gray-600 mb-6">
+        You've reached your free usage limit, or the public GitHub API rate limit was exceeded. Please log in to continue.
+      </p>
+      <button
+        onClick={onLogin}
+        className="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-lg hover:bg-gray-900 transition-colors duration-300"
+      >
+        Login with GitHub
+      </button>
+      <button
+        onClick={onClose}
+        className="mt-3 text-sm text-gray-500 hover:underline"
+      >
+        Close
+      </button>
     </motion.div>
+  </motion.div>
 );
 
 const GitformeUi = () => {
-  const { isAuthenticated, user, logout, isLoading } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
   const { username, reponame } = useParams();
 
@@ -86,7 +86,7 @@ const GitformeUi = () => {
     }
   }, [username, reponame]);
 
-  
+
   useEffect(() => {
     const checkForBrave = async () => {
       if (navigator.brave && await navigator.brave.isBrave()) {
@@ -99,18 +99,18 @@ const GitformeUi = () => {
   const handleGitHubLogin = () => {
     const redirectUrl = `${apiServerUrl}/api/auth/github`
     try {
-    console.log(`Attempting to redirect to: ${redirectUrl}`);
-    window.location.href = redirectUrl;
-  } catch (error) {
-    console.error("THE REDIRECT FAILED! The browser threw an error:", error);
-  }
+      console.log(`Attempting to redirect to: ${redirectUrl}`);
+      window.location.href = redirectUrl;
+    } catch (error) {
+      console.error("THE REDIRECT FAILED! The browser threw an error:", error);
+    }
   };
 
   const handleLogout = async () => {
     await logout();
     navigate('/');
   };
-  
+
   const handleCookRepoUrl = () => {
     if (!repoUrl) {
       alert('Please enter a GitHub repository URL.');
@@ -149,25 +149,19 @@ const GitformeUi = () => {
       // Proceed to the repo page (always without .git)
       navigate(`/${cleanUsername}/${cleanRepoName}`);
     } catch (e) {
+      console.log(e);
       alert('Invalid URL format. Please enter a valid URL.');
     }
   };
 
-// ...existing code...
-      const handleApiError = () => {
-        if (!isAuthenticated) {
-            setShowLoginPrompt(true);
-        }
-    };
+  // ...existing code...
+  const handleApiError = () => {
+    if (!isAuthenticated) {
+      setShowLoginPrompt(true);
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-gray-900"></div>
-        <span className="ml-4 text-lg font-semibold text-gray-700">Checking authentication...</span>
-      </div>
-    );
-  }
+
   return (
     <div className="bg-[#FDFCFB] bg-[radial-gradient(#d1d1d1_1px,transparent_1px)] [background-size:24px_24px] min-h-screen font-sans text-gray-800 relative">
       {/* Persistent Auth/Rate Limit Banner */}
@@ -190,14 +184,14 @@ const GitformeUi = () => {
         </div>
       )}
       <canvas id="codeCanvas" className="absolute inset-0 w-full h-full pointer-events-none z-0 opacity-20"></canvas>
-      <AppHeader 
-        isAuthenticated={isAuthenticated} 
-        user={user} 
-        onLogout={handleLogout} 
-        onLogin={handleGitHubLogin} 
-        repoUrl={repoUrl} 
-        setRepoUrl={setRepoUrl} 
-        oncook={handleCookRepoUrl} 
+      <AppHeader
+        isAuthenticated={isAuthenticated}
+        user={user}
+        onLogout={handleLogout}
+        onLogin={handleGitHubLogin}
+        repoUrl={repoUrl}
+        setRepoUrl={setRepoUrl}
+        oncook={handleCookRepoUrl}
       />
 
       {/* Brave Browser Warning Message */}
@@ -208,10 +202,10 @@ const GitformeUi = () => {
               {/* Brave logo SVG */}
               {/* Brave logo SVG (vector path, not emoji) */}
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="16" cy="16" r="16" fill="#F36F21"/>
+                <circle cx="16" cy="16" r="16" fill="#F36F21" />
                 <g>
-                  <path d="M16 8.5c-2.5 0-4.5 2-4.5 4.5 0 2.2 1.6 4.1 3.7 4.4v2.1c0 .4.3.7.7.7s.7-.3.7-.7v-2.1c2.1-.3 3.7-2.2 3.7-4.4 0-2.5-2-4.5-4.5-4.5zm0 7.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" fill="#fff"/>
-                  <path d="M11.5 21c.3.6 1.1 1 2.1 1h4.8c1 0 1.8-.4 2.1-1l.7-1.3c.2-.3.1-.7-.2-.9-.3-.2-.7-.1-.9.2l-.7 1.3c-.1.2-.5.4-1 .4h-4.8c-.5 0-.9-.2-1-.4l-.7-1.3c-.2-.3-.6-.4-.9-.2-.3.2-.4.6-.2.9l.7 1.3z" fill="#fff"/>
+                  <path d="M16 8.5c-2.5 0-4.5 2-4.5 4.5 0 2.2 1.6 4.1 3.7 4.4v2.1c0 .4.3.7.7.7s.7-.3.7-.7v-2.1c2.1-.3 3.7-2.2 3.7-4.4 0-2.5-2-4.5-4.5-4.5zm0 7.5c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z" fill="#fff" />
+                  <path d="M11.5 21c.3.6 1.1 1 2.1 1h4.8c1 0 1.8-.4 2.1-1l.7-1.3c.2-.3.1-.7-.2-.9-.3-.2-.7-.1-.9.2l-.7 1.3c-.1.2-.5.4-1 .4h-4.8c-.5 0-.9-.2-1-.4l-.7-1.3c-.2-.3-.6-.4-.9-.2-.3.2-.4.6-.2.9l.7 1.3z" fill="#fff" />
                 </g>
               </svg>
             </div>
@@ -227,16 +221,16 @@ const GitformeUi = () => {
           </div>
         </div>
       )}
- <AnimatePresence>
-                {showLoginPrompt && (
-                    <LoginPromptModal 
-                        onLogin={handleGitHubLogin}
-                        onClose={() => setShowLoginPrompt(false)}
-                    />
-                )}
-            </AnimatePresence>
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <LoginPromptModal
+            onLogin={handleGitHubLogin}
+            onClose={() => setShowLoginPrompt(false)}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence mode="wait">
-        <motion.div 
+        <motion.div
           key={username && reponame ? "repo-view-active" : "landing-view-active"}
           initial={{ opacity: 0, scale: 0.98, filter: 'blur(5px)' }}
           animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
@@ -247,24 +241,25 @@ const GitformeUi = () => {
           {!username || !reponame ? (
             <LandingPageContent key="landing" />
           ) : (
-            <motion.main 
-              key="repo-detail" 
-              className="container mx-auto" 
-              initial={{opacity: 0}} 
-              animate={{opacity: 1}} 
-              exit={{opacity: 0}}
+            <motion.main
+              key="repo-detail"
+              className="container mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
             >
-            <RepoDetailView 
-              onApiError={handleApiError} 
-              onRateLimitExceeded={() => setRateLimitExceeded(true)}
-              onApiDown={() => setApiDown(true)}
-            />
+              <RepoDetailView
+                isAuthenticated={isAuthenticated}
+                onApiError={handleApiError}
+                onRateLimitExceeded={() => setRateLimitExceeded(true)}
+                onApiDown={() => setApiDown(true)}
+              />
 
             </motion.main>
           )}
         </motion.div>
       </AnimatePresence>
-      
+
       <footer className="text-center py-8 px-4 mt-16 border-t-2 border-black bg-white/50">
         <div className="flex flex-col items-center gap-3">
           <p className="flex items-center gap-2 text-gray-600 font-medium">
@@ -285,10 +280,10 @@ const GitformeUi = () => {
           <motion.button
             onClick={() => setIsChatOpen(true)}
             className="fixed bottom-6 right-6 bg-[#F9C79A] text-black p-4 rounded-full border-2 border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] z-40"
-            initial={{ scale: 0, y: 50 }} 
-            animate={{ scale: 1, y: 0 }} 
+            initial={{ scale: 0, y: 50 }}
+            animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0, y: 50 }}
-            whileHover={{ scale: 1.1, rotate: 5 }} 
+            whileHover={{ scale: 1.1, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
             aria-label="Open Chat"
           >

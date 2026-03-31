@@ -35,7 +35,7 @@ export const DependencyDashboard = ({ dependencyHealth }) => {
             )}
 
             {outdatedDeps.length > 0 && (
-                 <div>
+                <div>
                     <h4 className="font-bold text-xl mb-2 text-yellow-700">⚠️ Outdated Packages</h4>
                     <div className="overflow-x-auto border-2 border-black rounded-lg">
                         <table className="w-full text-base text-left">
@@ -57,7 +57,7 @@ export const DependencyDashboard = ({ dependencyHealth }) => {
                     </div>
                 </div>
             )}
-            
+
             <div>
                 <h4 className="font-bold text-xl mb-2">License Summary</h4>
                 <div className="flex flex-wrap gap-2">

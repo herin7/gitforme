@@ -1,6 +1,7 @@
-import { GitHubIcon, LoginIcon, LogoutIcon , CoffeeIcon} from "../components/Iconsfile";
+import { GitHubIcon, LoginIcon, LogoutIcon, CoffeeIcon } from "../components/Iconsfile";
 import menuIcon from "../assets/menu-icon.png"
 import searchIcon from "../assets/search-icon.png"
+import { FaShieldAlt } from 'react-icons/fa';
 import { useState } from "react";
 
 export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, setRepoUrl, oncook }) => {
@@ -25,18 +26,16 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                         <div className="lg:hidden flex ">
                             <button
                                 className="mr-5"
-                                onClick={()=>{setSearchOpen(true)}}
+                                onClick={() => { setSearchOpen(true) }}
                             >
-                                <img src={searchIcon} alt="search icon"/>
+                                <img src={searchIcon} alt="search icon" />
                             </button>
 
-                            <div className={`fixed inset-0 z-50 bg-white/30 flex transition-opacity duration-300 lg:hidden ${
-                                isSearchOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                            <div className={`fixed inset-0 z-50 bg-white/30 flex transition-opacity duration-300 lg:hidden ${isSearchOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                                 }`}>
                                 <div
-                                    className={`bg-white w-screen h-48 p-6 shadow-lg relative transform transition-transform duration-300 ease-in-out ${
-                                    isSearchOpen ? "translate-y-0" : "-translate-y-full"
-                                }`}>
+                                    className={`bg-white w-screen h-48 p-6 shadow-lg relative transform transition-transform duration-300 ease-in-out ${isSearchOpen ? "translate-y-0" : "-translate-y-full"
+                                        }`}>
                                     <button
                                         className="absolute top-4 right-4 text-4xl font-bold hover:text-gray-600 transition-colors"
                                         onClick={() => setSearchOpen(false)}
@@ -58,7 +57,7 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                             className="w-full px-4 py-2 border-2 border-black rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 placeholder-gray-500"
                                             aria-label="Repository URL"
                                         />
-                                        <button onClick={()=>{oncook(), setSearchOpen(false)}} className="bg-[#F9C79A] text-black font-bold px-6 py-2 border-2 border-black rounded-lg hover:bg-amber-400 transition-colors shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap">
+                                        <button onClick={() => { oncook(), setSearchOpen(false) }} className="bg-[#F9C79A] text-black font-bold px-6 py-2 border-2 border-black rounded-lg hover:bg-amber-400 transition-colors shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 whitespace-nowrap">
                                             cook
                                         </button>
                                     </div>
@@ -69,15 +68,13 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                 className="flex flex-col justify-center items-center"
                                 onClick={() => setOpen(true)}
                             >
-                                <img src={menuIcon} alt="menu icon"/>
+                                <img src={menuIcon} alt="menu icon" />
                             </button>
 
-                            <div className={`fixed inset-0 z-50 bg-white/30 flex transition-opacity duration-300 lg:hidden ${
-                                isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-                            }`}>
-                                <div className={`bg-white w-64 h-dvh p-6 shadow-lg relative transform transition-transform duration-300 ease-in-out ${
-                                    isOpen ? "translate-x-0" : "-translate-x-full"
+                            <div className={`fixed inset-0 z-50 bg-white/30 flex transition-opacity duration-300 lg:hidden ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                                 }`}>
+                                <div className={`bg-white w-64 h-dvh p-6 shadow-lg relative transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full"
+                                    }`}>
                                     <button
                                         className="absolute top-4 right-4 text-4xl font-bold hover:text-gray-600 transition-colors"
                                         onClick={() => setOpen(false)}
@@ -97,6 +94,17 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                             </a>
                                         </div>
 
+                                        <div className="flex flex-col items-center">
+                                            <a
+                                                href="/vulnerability-scan"
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-black rounded-lg hover:bg-gray-100 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+                                            >
+                                                <FaShieldAlt className="text-amber-500" />
+                                                <span className="md:inline">Scanner</span>
+                                                <span className="bg-amber-500 text-black text-[10px] px-1 rounded-full animate-pulse">New</span>
+                                            </a>
+                                        </div>
+
                                         {isAuthenticated ? (
                                             <>
                                                 <span className="font-semibold lg:hidden inline">Hi, {user?.username}!</span>
@@ -112,14 +120,14 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                             </button>
                                         )}
                                         <div className="flex flex-col items-center">
-                                    <a
-  href="https://whatdoc.xyz"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
->
-  🚀 Visit WhatDoc
-</a>
+                                            <a
+                                                href="https://whatdoc.xyz"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+                                            >
+                                                Meet SideChick
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -155,6 +163,15 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                 <span className="hidden md:inline">Star on GitHub</span>
                             </a>
 
+                            <a
+                                href="/vulnerability-scan"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-black rounded-lg hover:bg-gray-100 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+                            >
+                                <FaShieldAlt className="text-amber-500" />
+                                <span className="hidden md:inline">Scanner</span>
+                                <span className="bg-amber-500 text-black text-[10px] px-1 rounded-full">New</span>
+                            </a>
+
                             {isAuthenticated ? (
                                 <>
                                     <span className="font-semibold hidden lg:inline">Hi, {user?.username}!</span>
@@ -169,17 +186,17 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                     <span className="hidden md:inline">Login</span>
                                 </button>
                             )}
-                                <div className="flex flex-col items-center">
-                               <a
-  href="https://whatdoc.xyz"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
->
-  🚀 WhatDoc
-</a>
+                            <div className="flex flex-col items-center">
+                                <a
+                                    href="https://whatdoc.xyz"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
+                                >
+                                    Meet SideChick
+                                </a>
                             </div>
-                                        <a
+                            <a
                                 href="https://coff.ee/herinsoni3a"
                                 target="_blank"
                                 rel="noopener noreferrer"

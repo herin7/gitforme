@@ -51,6 +51,7 @@ exports.githubCallback = async (req, res) => {
         } else {
             console.log('[GitHub OAuth] Existing user found. Updating access token...');
             user.githubAccessToken = accessToken;
+            user.username = githubUser.login;
             await user.save();
             console.log('[GitHub OAuth] ✅ User updated.');
         }
@@ -73,7 +74,7 @@ exports.githubCallback = async (req, res) => {
         res.redirect(`${config.frontendUrl}?success=true&token=${fallbackToken}`);
 
     } catch (error) {
-       console.error('Error during GitHub authentication:', error.message);
+        console.error('Error during GitHub authentication:', error.message);
         const redirectUrl = config ? `${config.frontendUrl}/login?error=auth_failed` : '/login?error=auth_failed';
         res.redirect(redirectUrl);
     }
@@ -107,7 +108,7 @@ exports.verifyToken = async (req, res) => {
 
         const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
         const user = await User.findById(decoded.userId).select('-password -githubAccessToken');
-        
+
         if (!user) {
             console.log(`[VerifyToken] ❌ Invalid token. User not found for ID: ${decoded.userId}`);
             return res.status(401).json({ status: false, message: 'Invalid token' });

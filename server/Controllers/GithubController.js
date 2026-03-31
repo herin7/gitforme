@@ -2,31 +2,10 @@ const axios = require('axios');
 const User = require('../models/UserModel');
 const redisClient = require('../util/RediaClient');
 const { Octokit } = require("@octokit/rest");
+const { createGithubApi } = require('../util/githubApi');
 
 
-const createGithubApi = async (session) => {
-  const headers = { 'Accept': 'application/vnd.github.v3+json' };
-  
-  if (session?.userId) {
-    const user = await User.findById(session.userId);
-    if (user?.githubAccessToken) {
-      headers['Authorization'] = `token ${user.githubAccessToken}`;
-      console.log(`Making authenticated GitHub API request for user ${user.username}.`);
-      return axios.create({ 
-        baseURL: 'https://api.github.com', 
-        headers,
-        timeout: 30000 // 30 second timeout
-      });
-    }
-  }
-  
-  console.log('Making unauthenticated GitHub API request (fallback).');
-  return axios.create({ 
-    baseURL: 'https://api.github.com', 
-    headers,
-    timeout: 30000 // 30 second timeout
-  });
-};
+
 
 exports.getRepoTimeline = async (req, res) => {
   const { username, reponame } = req.params;

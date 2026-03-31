@@ -1,6 +1,7 @@
 const axios = require('axios');
 const redisClient = require('../util/RediaClient');
 const User = require('../models/UserModel');
+const { createGithubApi } = require('../util/githubApi');
 
 const githubApi = axios.create({
   baseURL: 'https://api.github.com',
@@ -9,7 +10,6 @@ const githubApi = axios.create({
   },
 });
 
-// Utility to robustly strip .git from repo names
 function stripGitSuffix(name) {
   if (typeof name === 'string' && name.toLowerCase().endsWith('.git')) {
     return name.slice(0, -4);
@@ -68,29 +68,5 @@ exports.fetchRepoDetails = async (req, res) => {
   }
 };
 
-const createGithubApi = async (session) => {
-  const headers = { Accept: 'application/vnd.github.v3+json' };
 
-  if (session?.userId) {
-    const user = await User.findById(session.userId);
-    if (user?.githubAccessToken) {
-      headers['Authorization'] = `token ${user.githubAccessToken}`;
-      console.log(
-        `Making authenticated GitHub API request for user ${user.username}.`
-      );
-      return axios.create({ 
-        baseURL: 'https://api.github.com', 
-        headers,
-        timeout: 30000 // 30 second timeout
-      });
-    }
-  }
-
-  console.log('Making unauthenticated GitHub API request (fallback).');
-  return axios.create({ 
-    baseURL: 'https://api.github.com', 
-    headers,
-    timeout: 30000 // 30 second timeout
-  });
-};
 
