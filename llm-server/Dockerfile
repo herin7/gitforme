@@ -4,5 +4,5 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-EXPOSE 8000
-CMD ["gunicorn", "--timeout", "120", "--bind", "0.0.0.0:5001", "app:app"]
+EXPOSE 5001
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5001", "--timeout-keep-alive", "120"]

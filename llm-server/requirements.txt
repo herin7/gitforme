@@ -1,5 +1,5 @@
-Flask[async]==2.3.2  # Specify version with the extra
-flask-cors==4.0.0
+fastapi
+uvicorn[standard]
 python-dotenv==1.0.0
 requests==2.31.0
 aiohttp==3.8.6
@@ -10,5 +10,4 @@ sentence-transformers==2.2.2
 faiss-cpu==1.7.4
 openai>=1.0.0
 colorama==0.4.6
-gunicorn==20.1.0
 cachetools
