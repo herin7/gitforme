@@ -8,8 +8,9 @@ import requests
 import aiohttp
 import asyncio
 import gc
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 from transformers import AutoTokenizer, AutoModel
 from dotenv import load_dotenv
 import torch
@@ -18,8 +19,9 @@ from datetime import datetime, timedelta
 from collections import deque
 from colorama import Fore, Style
 from urllib.parse import urlparse
-from cachetools import LRUCache 
+from cachetools import LRUCache
 from datetime import timezone
+from contextlib import asynccontextmanager
 
 load_dotenv()
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
@@ -42,25 +44,6 @@ handler.setFormatter(ColoredFormatter('%(asctime)s - %(levelname)s - %(message)s
 logging.getLogger().handlers = [handler]
 logging.getLogger().setLevel(logging.INFO)
 
-app = Flask(__name__)
-allowed_origins = [
-    "http://localhost:3000", 
-    "http://localhost:3001", 
-    "http://localhost:5173", 
-    "https://gitforme.tech",
-    "https://www.gitforme.tech"
-]
-CORS(app, origins=allowed_origins, supports_credentials=True)
-@app.after_request
-def apply_cors(response):
-    response.headers["Access-Control-Allow-Origin"] = "https://www.gitforme.tech"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    return response
-
-app.config['PROPAGATE_EXCEPTIONS'] = True
-app.config['DEBUG'] = True
-
 EMBEDDING_MODEL_NAME = 'sentence-transformers/all-MiniLM-L6-v2'
 try:
     EMBEDDING_TOKENIZER = AutoTokenizer.from_pretrained(EMBEDDING_MODEL_NAME)
@@ -75,6 +58,31 @@ repo_cache = LRUCache(maxsize=5)
 global_api_call_times = deque()
 GLOBAL_MAX_CALLS_PER_HOUR = 10
 WINDOW_SECONDS = 3600
+
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:5173",
+    "https://gitforme.tech",
+    "https://www.gitforme.tech"
+]
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown lifecycle events for FastAPI."""
+    logging.info("FastAPI application startup complete.")
+    yield
+    logging.info("FastAPI application shutting down.")
+
+app = FastAPI(title="GitForme LLM Server", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 
 def extract_owner_repo(repo_url: str):
     if "github.com" in repo_url:
@@ -287,24 +295,27 @@ Please provide your analysis based on these rules and context."""
         logging.error(f"LLM call failed: {e}. Time taken before error: {time.time() - llm_call_start_time:.2f}s.")
         yield f"data: {json.dumps({'error': 'The AI Analyst is currently unavailable.'})}\n\n"
 
-@app.route('/api/chat', methods=['POST'])
-async def chat():
+@app.post('/api/chat')
+async def chat(request: Request):
     request_start_time = time.time()
-    logging.info(f"Received request from {request.remote_addr} at /api/chat.")
+    client_host = request.client.host if request.client else "unknown"
+    logging.info(f"Received request from {client_host} at /api/chat.")
     now = datetime.now(timezone.utc)
     while global_api_call_times and now - global_api_call_times[0] > timedelta(seconds=WINDOW_SECONDS):
         global_api_call_times.popleft()
     if len(global_api_call_times) >= GLOBAL_MAX_CALLS_PER_HOUR:
-        logging.warning(f"Global rate limit of {GLOBAL_MAX_CALLS_PER_HOUR}/hour exceeded for {request.remote_addr}.")
+        logging.warning(f"Global rate limit of {GLOBAL_MAX_CALLS_PER_HOUR}/hour exceeded for {client_host}.")
         retry_after_seconds = (global_api_call_times[0] + timedelta(seconds=WINDOW_SECONDS) - now).total_seconds()
         minutes, seconds = divmod(int(retry_after_seconds), 60)
         error_message = f"Rate limit exceeded. Please try again in approximately {minutes} minute(s)." if minutes > 0 else f"Rate limit exceeded. Please try again in {seconds} second(s)."
-        response = jsonify({"error": error_message})
-        response.headers['Retry-After'] = str(int(retry_after_seconds))
         logging.info(f"Rate limit response sent in {time.time() - request_start_time:.2f}s.")
-        return response, 429
+        return JSONResponse(
+            status_code=429,
+            content={"error": error_message},
+            headers={"Retry-After": str(int(retry_after_seconds))}
+        )
     global_api_call_times.append(now)
-    data = request.get_json()
+    data = await request.json()
     query = data.get("query")
     repo_id = data.get("repoId")
     # user provided cred
@@ -314,32 +325,33 @@ async def chat():
     api_version = data.get("apiVersion", "2023-05-15")
     if not query or not repo_id:
         logging.error("Missing query or repoId in request.")
-        return jsonify({"error": "Missing query or repoId"}), 400
+        return JSONResponse(status_code=400, content={"error": "Missing query or repoId"})
     try:
         owner, repo = extract_owner_repo(repo_id)
         repo_url = f"https://github.com/{owner}/{repo}"
     except ValueError as e:
         logging.error(f"Invalid repoId format: {repo_id}. Error: {e}")
-        return jsonify({"error": str(e)}), 400
+        return JSONResponse(status_code=400, content={"error": str(e)})
     logging.info(f"Processing query '{query}' for repo '{repo_id}'.")
     context, error = await get_relevant_context(repo_url, query)
     if error:
         logging.error(f"Error getting context for '{repo_id}': {error}")
-        return jsonify({"error": error}), 500
+        return JSONResponse(status_code=500, content={"error": error})
     logging.info(f"Context retrieved successfully. Total request processing time before streaming: {time.time() - request_start_time:.2f}s.")
-    return Response(
-    stream_llm_response(
-        context, query, repo_url,
-        azure_endpoint=azure_endpoint,
-        api_key=api_key,
-        deployment=deployment,
-        api_version=api_version
-    ),
-    mimetype='text/event-stream'
-)
+    return StreamingResponse(
+        stream_llm_response(
+            context, query, repo_url,
+            azure_endpoint=azure_endpoint,
+            api_key=api_key,
+            deployment=deployment,
+            api_version=api_version
+        ),
+        media_type='text/event-stream'
+    )
 
 
 if __name__ == '__main__':
+    import uvicorn
     port = int(os.environ.get("PORT", 5001))
-    logging.info(f"Starting Flask app on 0.0.0.0:{port}")
-    app.run(host='0.0.0.0', port=port)
+    logging.info(f"Starting FastAPI app on 0.0.0.0:{port}")
+    uvicorn.run(app, host='0.0.0.0', port=port)
