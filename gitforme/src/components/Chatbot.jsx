@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -35,6 +35,39 @@ const MinimizeIcon = () => (
     strokeLinejoin="round"
   >
     <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
+
+const SettingsIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="6 9 12 15 18 9"></polyline>
   </svg>
 );
 
@@ -76,6 +109,14 @@ const CopyIcon = () => (
   </svg>
 );
 
+// --- Supported model platforms ---
+const MODEL_PLATFORMS = [
+  { id: "azure", label: "Azure OpenAI", hint: "Uses Azure OpenAI endpoint" },
+  { id: "openai", label: "OpenAI", hint: "Uses OpenAI API directly" },
+  { id: "gemini", label: "Google Gemini", hint: "Coming soon", disabled: true },
+  { id: "anthropic", label: "Anthropic", hint: "Coming soon", disabled: true },
+];
+
 const useChat = () => {
   const { username, reponame } = useParams();
   const [messages, setMessages] = useState([
@@ -89,13 +130,9 @@ const useChat = () => {
   const [status, setStatus] = useState("");
   const messagesEndRef = useRef(null);
 
-  // 🔑 Azure Credentials
-  const [azureEndpoint, setAzureEndpoint] = useState("");
+  // Simplified credentials — only API Key + Model Platform
   const [apiKey, setApiKey] = useState("");
-  const [deployment, setDeployment] = useState("");
-  const [apiVersion, setApiVersion] = useState("2023-05-15");
-
-  const [showApiKey, setShowApiKey] = useState(false);
+  const [modelPlatform, setModelPlatform] = useState("azure");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -119,12 +156,12 @@ const useChat = () => {
         repoId: `${username}/${reponame}`,
       };
 
-      // ✅ Only include Azure creds if all 3 are present
-      if (azureEndpoint && apiKey && deployment) {
-        requestBody.azureEndpoint = azureEndpoint;
-        requestBody.apiKey = apiKey;
-        requestBody.deployment = deployment;
-        requestBody.apiVersion = apiVersion;
+      // Only include API key if provided — backend falls back to its own env vars
+      if (apiKey.trim()) {
+        requestBody.apiKey = apiKey.trim();
+        // For Azure platform, the endpoint & deployment use server-side defaults
+        // For OpenAI platform, the backend can route accordingly (future)
+        requestBody.modelPlatform = modelPlatform;
       }
 
       const response = await fetch("https://gitforme-bot.onrender.com/api/chat", {
@@ -183,35 +220,146 @@ const useChat = () => {
     isStreaming,
     status,
     messagesEndRef,
-    // expose credentials to UI
-    azureEndpoint,
-    setAzureEndpoint,
     apiKey,
     setApiKey,
-    deployment,
-    setDeployment,
-    apiVersion,
-    setApiVersion,
+    modelPlatform,
+    setModelPlatform,
   };
 };
 
-const ChatHeader = ({ onClose, onMinimize }) => (
+// --- Settings Panel (collapsible, triggered from header) ---
+const SettingsPanel = ({
+  isOpen,
+  apiKey,
+  setApiKey,
+  modelPlatform,
+  setModelPlatform,
+}) => {
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeInOut" }}
+          className="overflow-hidden border-b-2 border-black"
+        >
+          <div className="p-4 bg-[#FEF9F2] space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <SettingsIcon />
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                Model Configuration
+              </span>
+            </div>
+
+            {/* Model Platform Selector */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                Model Platform
+              </label>
+              <div className="relative">
+                <select
+                  value={modelPlatform}
+                  onChange={(e) => setModelPlatform(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border-2 border-black rounded-lg text-sm font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+                >
+                  {MODEL_PLATFORMS.map((p) => (
+                    <option key={p.id} value={p.id} disabled={p.disabled}>
+                      {p.label} {p.disabled ? "(Coming Soon)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <ChevronDownIcon />
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">
+                {MODEL_PLATFORMS.find((p) => p.id === modelPlatform)?.hint}
+              </p>
+            </div>
+
+            {/* API Key */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                API Key
+                <span className="text-gray-400 font-normal ml-1">(optional)</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showApiKey ? "text" : "password"}
+                  placeholder="Enter your API key..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border-2 border-black rounded-lg text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black transition-colors text-sm"
+                  title={showApiKey ? "Hide API Key" : "Show API Key"}
+                >
+                  {showApiKey ? "\uD83D\uDE48" : "\uD83D\uDC41\uFE0F"}
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-400 mt-1">
+                Leave empty to use the default server-side key.
+              </p>
+            </div>
+
+            {/* Connection indicator */}
+            <div className="flex items-center gap-2 pt-1">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  apiKey.trim() ? "bg-green-500" : "bg-amber-400"
+                }`}
+              />
+              <span className="text-[11px] text-gray-500">
+                {apiKey.trim()
+                  ? "Using your API key"
+                  : "Using default server key"}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const ChatHeader = ({ onClose, onMinimize, onToggleSettings, isSettingsOpen }) => (
   <div className="p-4 border-b-2 border-black flex justify-between items-center bg-[#FEF9F2] flex-shrink-0">
     <div className="flex items-center gap-3">
       <BotAvatar />
-      <h3 className="font-bold text-lg tracking-tight">GitBro</h3>
+      <div>
+        <h3 className="font-bold text-lg tracking-tight leading-tight">GitBro</h3>
+        <span className="text-[11px] text-gray-400 leading-tight">AI Repo Analyst</span>
+      </div>
     </div>
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
+      <button
+        onClick={onToggleSettings}
+        className={`p-1.5 rounded-lg transition-all duration-200 ${
+          isSettingsOpen
+            ? "bg-amber-200 text-black border border-black"
+            : "text-gray-400 hover:text-black hover:bg-gray-100"
+        }`}
+        title="Model Settings"
+      >
+        <SettingsIcon />
+      </button>
       <button
         onClick={onMinimize}
-        className="text-black hover:opacity-70 transition-opacity"
+        className="p-1.5 text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all duration-200"
         title="Minimize"
       >
         <MinimizeIcon />
       </button>
       <button
         onClick={onClose}
-        className="font-bold text-xl text-black hover:opacity-70 transition-opacity"
+        className="p-1.5 font-bold text-lg text-gray-400 hover:text-black hover:bg-gray-100 rounded-lg transition-all duration-200 leading-none"
         title="Close"
       >
         ✕
@@ -280,7 +428,7 @@ const BotResponse = ({ text, isStreaming, isLastMessage }) => {
     },
   };
 
-  const displayText = text + (isStreaming && isLastMessage ? "▍" : "");
+  const displayText = text + (isStreaming && isLastMessage ? "\u258D" : "");
 
   return (
     <article className="prose prose-sm max-w-none prose-headings:font-bold prose-headings:text-black prose-p:text-gray-800 prose-a:text-amber-700 prose-a:font-semibold hover:prose-a:text-amber-900 prose-strong:text-black prose-ul:my-2 prose-ol:my-2 prose-li:marker:text-gray-500 prose-blockquote:border-l-4 prose-blockquote:border-amber-400 prose-blockquote:pl-4 prose-blockquote:text-gray-600 prose-code:bg-amber-100 prose-code:text-amber-900 prose-code:font-mono prose-code:px-1.5 prose-code:py-1 prose-code:rounded-md prose-table:border prose-th:p-2 prose-td:p-2 prose-th:bg-gray-100">
@@ -361,114 +509,32 @@ const MessageList = ({ messages, isStreaming, messagesEndRef }) => (
   </div>
 );
 
-const ChatInput = ({
-  input,
-  setInput,
-  onSendMessage,
-  isStreaming,
-  status,
-  azureEndpoint,
-  setAzureEndpoint,
-  apiKey,
-  setApiKey,
-  deployment,
-  setDeployment,
-  apiVersion,
-  setApiVersion,
-}) => {
+const ChatInput = ({ input, setInput, onSendMessage, isStreaming, status }) => {
   const suggestedPrompts = [
     "Summarize this repo",
     "List the main dependencies",
     "What are the key files?",
   ];
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [showEndpoint, setShowEndpoint] = useState(false);
-
-  //  Validation logic
-  const hasAnyCred = azureEndpoint || apiKey || deployment;
-  const allCredsFilled = azureEndpoint && apiKey && deployment;
-  const showWarning = hasAnyCred && !allCredsFilled;
 
   return (
     <div className="p-4 border-t-2 border-black flex flex-col gap-3 bg-[#FEF9F2] flex-shrink-0">
-      {/*  Credential Inputs */}
-      <div className="flex flex-col gap-2 mb-3">
-        <div className="relative">
-          <input
-            type={showEndpoint ? "text" : "password"}
-            placeholder="Azure Endpoint"
-            value={azureEndpoint}
-            onChange={(e) => setAzureEndpoint(e.target.value)}
-            className="px-2 py-1 border rounded text-xs pr-8 w-full"
-          />
-          <button
-            type="button"
-            onClick={() => setShowEndpoint(!showEndpoint)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black text-xs"
-          >
-            {showEndpoint ? "🙈" : "👁️"}
-          </button>
-        </div>
-
-        {/* API Key */}
-        <div className="relative">
-          <input
-            type={showApiKey ? "text" : "password"}
-            placeholder="API Key"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="px-2 py-1 border rounded text-xs pr-8 w-full"
-          />
-          <button
-            type="button"
-            onClick={() => setShowApiKey(!showApiKey)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black text-xs"
-          >
-            {showApiKey ? "🙈" : "👁️"}
-          </button>
-        </div>
-
-        <input
-          type="text"
-          placeholder="Deployment Name"
-          value={deployment}
-          onChange={(e) => setDeployment(e.target.value)}
-          className="px-2 py-1 border rounded text-xs"
-        />
-        <input
-          type="text"
-          placeholder="API Version"
-          value={apiVersion}
-          onChange={(e) => setApiVersion(e.target.value)}
-          className="px-2 py-1 border rounded text-xs"
-        />
-      </div>
-
-      {/* Warning if inputs are inconsistent */}
-      {showWarning && (
-        <p className="text-xs text-red-600 font-medium">
-          ⚠️ Please fill <strong>all</strong> Azure fields (Endpoint, API Key,
-          Deployment) or leave them empty.
-        </p>
-      )}
-
-      {/* Chat Box */}
+      {/* Chat Input Box */}
       <div className="flex gap-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) =>
-            e.key === "Enter" && !showWarning && onSendMessage(input)
+          onKeyDown={(e) =>
+            e.key === "Enter" && !e.shiftKey && onSendMessage(input)
           }
           placeholder="Ask a question..."
-          className="flex-1 px-4 py-2 border-2 border-black rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-[2px_2px_0px_rgba(0,0,0,1)]"
+          className="flex-1 px-4 py-2.5 border-2 border-black rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-[2px_2px_0px_rgba(0,0,0,1)] text-sm"
           disabled={isStreaming}
         />
         <button
           onClick={() => onSendMessage(input)}
           className="bg-[#F9C79A] text-black font-bold w-12 h-12 flex items-center justify-center border-2 border-black rounded-xl hover:bg-amber-400 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-[2px_2px_0px_rgba(0,0,0,1)] active:translate-y-px active:translate-x-px active:shadow-none"
-          disabled={isStreaming || !input.trim() || showWarning} // disable if creds incomplete
+          disabled={isStreaming || !input.trim()}
         >
           {isStreaming ? (
             <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
@@ -488,9 +554,8 @@ const ChatInput = ({
           {suggestedPrompts.map((prompt) => (
             <button
               key={prompt}
-              onClick={() => !showWarning && onSendMessage(prompt)}
-              className="px-2 py-1 bg-white border border-black/20 text-xs rounded-full hover:bg-amber-100 hover:border-black transition-colors disabled:opacity-50"
-              disabled={showWarning}
+              onClick={() => onSendMessage(prompt)}
+              className="px-3 py-1.5 bg-white border border-black/20 text-xs rounded-full hover:bg-amber-100 hover:border-black transition-all duration-200 hover:shadow-[1px_1px_0px_rgba(0,0,0,1)]"
             >
               {prompt}
             </button>
@@ -506,6 +571,7 @@ const ChatbotPanel = ({ onClose }) => {
   const [width, setWidth] = useState(420);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 430);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const isResizing = useRef(false);
 
   const handleMouseDown = useCallback((e) => {
@@ -560,7 +626,19 @@ const ChatbotPanel = ({ onClose }) => {
         onMouseDown={handleMouseDown}
         className="absolute top-0 left-[-4px] w-2 h-full cursor-col-resize z-50"
       />
-      <ChatHeader onClose={onClose} onMinimize={handleMinimize} />
+      <ChatHeader
+        onClose={onClose}
+        onMinimize={handleMinimize}
+        onToggleSettings={() => setIsSettingsOpen(!isSettingsOpen)}
+        isSettingsOpen={isSettingsOpen}
+      />
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        apiKey={chatLogic.apiKey}
+        setApiKey={chatLogic.setApiKey}
+        modelPlatform={chatLogic.modelPlatform}
+        setModelPlatform={chatLogic.setModelPlatform}
+      />
       <MessageList {...chatLogic} />
       <ChatInput {...chatLogic} onSendMessage={chatLogic.handleSendMessage} />
     </motion.div>
