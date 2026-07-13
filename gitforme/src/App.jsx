@@ -7,11 +7,13 @@ import VulnerabilityScanPage from './components/VulnerabilityScanPage';
 import Login from '../pages/Login';
 import RepoPage from '../pages/gitpage';
 import ProtectedRoute from './components/ProtectedRoute';
+import DomainShiftBanner from './components/DomainShiftBanner';
 import { Analytics } from "@vercel/analytics/react"
 
 function App() {
   return (
     <>
+      <DomainShiftBanner />
       <Routes>
         <Route path="/" element={<GitformeUi />} />
         <Route path="/vulnerability-scan" element={<VulnerabilityScanPage />} />
