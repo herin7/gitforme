@@ -121,12 +121,12 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                                         )}
                                         <div className="flex flex-col items-center">
                                             <a
-                                                href="https://whatdoc.xyz"
+                                                href="https://herin.vercel.app"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
                                             >
-                                                Meet SideChick
+                                                who built this?
                                             </a>
                                         </div>
                                     </div>
@@ -188,12 +188,12 @@ export const AppHeader = ({ isAuthenticated, user, onLogout, onLogin, repoUrl, s
                             )}
                             <div className="flex flex-col items-center">
                                 <a
-                                    href="https://whatdoc.xyz"
+                                    href="https://herin.vercel.app"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 border-2 border-black rounded-lg hover:bg-amber-200 transition-colors font-semibold shadow-[3px_3px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5"
                                 >
-                                    Meet SideChick
+                                    who built this?
                                 </a>
                             </div>
                             <a
