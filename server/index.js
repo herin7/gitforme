@@ -4,8 +4,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const RedisStore = require("connect-redis").default;
-const redisClient = require("./util/RediaClient");
 const authRoute = require("./Routes/AuthRoute");
 const repoRoute = require("./Routes/RepoRoutes");
 const statsRoute = require('./Routes/StatsRoute');
@@ -19,13 +17,19 @@ const app = express();
 
 app.set('trust proxy', config.isProduction ? 1 : 0);
 
-// Redis configuration
-redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-redisClient.on('connect', () => console.log('✅ Connected to Redis'));
-const redisStore = new RedisStore({
-  client: redisClient,
-  prefix: config.redisPrefix
-});
+// Redis is optional. When unavailable, express-session falls back to its
+// in-memory store; the existing signed JWT remains the durable auth fallback.
+let redisClient;
+let sessionStore;
+if (process.env.REDIS_URL) {
+  const RedisStore = require("connect-redis").default;
+  redisClient = require("./util/RediaClient");
+  redisClient.on('error', (err) => console.error('Redis Client Error:', err.message));
+  redisClient.on('connect', () => console.log('✅ Connected to Redis'));
+  sessionStore = new RedisStore({ client: redisClient, prefix: config.redisPrefix });
+} else {
+  console.warn('⚠️ REDIS_URL is not set; using ephemeral in-memory sessions.');
+}
 
 // CORS configuration
 const allowedOrigins = [
@@ -62,7 +66,7 @@ app.use(cookieParser());
 // Session Management
 app.use(
   session({
-    store: redisStore,
+    ...(sessionStore ? { store: sessionStore } : {}),
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -91,7 +95,12 @@ mongoose.connect(process.env.MONGO_URL, {})
 
 app.use("/api/auth", authRoute);
 app.use("/api/stats", statsRoute);
-app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+app.get("/api/health", (req, res) => {
+  const mongo = mongoose.connection.readyState === 1 ? "ok" : "unavailable";
+  const redis = !redisClient ? "disabled" : redisClient.isReady ? "ok" : "unavailable";
+  const healthy = mongo === "ok" && (redis === "ok" || redis === "disabled");
+  res.status(healthy ? 200 : 503).json({ status: healthy ? "ok" : "degraded", mongo, redis });
+});
 
 // Protected GitHub routes
 app.use("/api/github", requireAuth);
