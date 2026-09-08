@@ -1,7 +1,7 @@
 // server/Controllers/StatsController.js
 
 const User = require('../models/UserModel');
-const redisClient = require('../util/RediaClient');
+const redisClient = process.env.REDIS_URL ? require('../util/RediaClient') : null;
 
 /**
  * Gets the total count of registered users.
@@ -16,7 +16,7 @@ exports.getUserCount = async (req, res) => {
 
     try {
         // 1. Check Redis Cache First
-        const cachedCount = await redisClient.get(cacheKey);
+        const cachedCount = redisClient?.isReady ? await redisClient.get(cacheKey) : null;
         if (cachedCount) {
             console.log("Cache hit for user count.");
             return res.json(JSON.parse(cachedCount));
@@ -28,9 +28,9 @@ exports.getUserCount = async (req, res) => {
         const data = { count };
 
         // 3. Store the result in Redis with a 1-hour expiration (3600 seconds)
-        await redisClient.set(cacheKey, JSON.stringify(data), {
-            EX: 3600, 
-        });
+        if (redisClient?.isReady) {
+            await redisClient.set(cacheKey, JSON.stringify(data), { EX: 3600 });
+        }
 
         res.json(data);
 
