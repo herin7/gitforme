@@ -120,16 +120,19 @@ const useChat = () => {
       };
 
       // ✅ Only include Azure creds if all 3 are present
+      const headers = { "Content-Type": "application/json" };
       if (azureEndpoint && apiKey && deployment) {
         requestBody.azureEndpoint = azureEndpoint;
-        requestBody.apiKey = apiKey;
         requestBody.deployment = deployment;
         requestBody.apiVersion = apiVersion;
+        // 🔒 Send the API key via the Authorization header rather than the
+        // JSON body so it is not persisted alongside generic request-body logs.
+        headers.Authorization = `Bearer ${apiKey}`;
       }
 
       const response = await fetch("https://gitforme-bot.onrender.com/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(requestBody),
       });
 
