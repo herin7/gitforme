@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { githubCallback, verifyUser } = require('../Controllers/AuthController');
+const { githubCallback, verifyUser, verifyToken } = require('../Controllers/AuthController');
 
 /**
  * @swagger
@@ -46,6 +46,28 @@ router.get('/github/callback', githubCallback);
  *         description: User verified
  */
 router.post('/verifyUser', verifyUser);
+
+/**
+ * @swagger
+ * /api/auth/verifyToken:
+ *   post:
+ *     description: Verifies the fallback JWT and re-establishes the session.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Token valid
+ *       401:
+ *         description: Missing or invalid token
+ */
+router.post('/verifyToken', verifyToken);
 
 /**
  * @swagger

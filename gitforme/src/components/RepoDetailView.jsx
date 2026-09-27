@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
+import apiClient from '../api/axiosConfig';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -140,20 +141,20 @@ const RepoDetailView = ({ isAuthenticated, onApiError, onRateLimitExceeded, onAp
             setIsLoading(true);
             setError(null);
             try {
-                const repoRes = await axios.get(repoBase, { withCredentials: true });
+                const repoRes = await apiClient.get(repoBase, { withCredentials: true });
                 const defaultBranch = repoRes.data.default_branch || 'main';
 
                 const results = await Promise.allSettled([
-                    axios.get(`${repoBase}/readme`, { withCredentials: true }),
-                    axios.get(`${repoBase}/git/trees/${defaultBranch}?recursive=1`, { withCredentials: true }),
-                    axios.get(`${repoBase}/contributors`, { withCredentials: true }),
-                    axios.get(`${repoBase}/deployments`, { withCredentials: true }),
-                    axios.get(`${repoBase}/issues`, { withCredentials: true }),
-                    axios.get(`${repoBase}/good-first-issues`, { withCredentials: true }),
-                    axios.get(`${repoBase}/insights`, { withCredentials: true }),
-                    axios.get(`${repoBase}/hotspots`, { withCredentials: true }),
-                    axios.get(`${repoBase}/insights/dependencies`, { withCredentials: true }),
-                    axios.get(`${repoBase}/timeline`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/readme`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/git/trees/${defaultBranch}?recursive=1`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/contributors`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/deployments`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/issues`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/good-first-issues`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/insights`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/hotspots`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/insights/dependencies`, { withCredentials: true }),
+                    apiClient.get(`${repoBase}/timeline`, { withCredentials: true }),
                 ]);
 
                 const getData = (result, defaultValue) => result.status === 'fulfilled' ? result.value.data : defaultValue;
@@ -248,7 +249,7 @@ const RepoDetailView = ({ isAuthenticated, onApiError, onRateLimitExceeded, onAp
         const contentUrl = `${fileContentBase}/${encodeURIComponent(fileNode.path)}`;
 
         try {
-            const contentRes = await axios.get(contentUrl, {
+            const contentRes = await apiClient.get(contentUrl, {
                 withCredentials: true,
             });
             const { data } = contentRes;
@@ -267,7 +268,7 @@ const RepoDetailView = ({ isAuthenticated, onApiError, onRateLimitExceeded, onAp
         setCommitHistory([]);
 
         try {
-            const historyRes = await axios.get(`${repoBase}/commits`, {
+            const historyRes = await apiClient.get(`${repoBase}/commits`, {
                 params: { path: fileNode.path },
                 withCredentials: true,
             });

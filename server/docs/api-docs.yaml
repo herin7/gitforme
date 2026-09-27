@@ -42,6 +42,23 @@ paths:
       responses:
         '200':
           description: User verified
+  /auth/verifyToken:
+    post:
+      description: Verifies the fallback JWT and re-establishes the session.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              token:
+                type: string
+      responses:
+        '200':
+          description: Token valid
+        '401':
+          description: Missing or invalid token
   /auth/logout:
     post:
       description: Clears the user token & logs out the user.

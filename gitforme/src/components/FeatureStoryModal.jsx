@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from '../api/axiosConfig';
 import ReactMarkdown from 'react-markdown';
 import {  toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -15,7 +15,7 @@ export const FeatureStoryModal = ({ issue, username, reponame, onClose, onAddCon
             try {
                 const apiServerUrl = import.meta.env.VITE_API_URL;
                 
-                const response = await axios.get(`${apiServerUrl}/api/github/${username}/${reponame}/issues/${issue.number}/timeline`, { withCredentials: true });
+                const response = await apiClient.get(`${apiServerUrl}/api/github/${username}/${reponame}/issues/${issue.number}/timeline`, { withCredentials: true });
                 setTimeline(response.data);
             } catch (error) {
                 toast.error("Could not load feature timeline.");
